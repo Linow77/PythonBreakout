@@ -16,10 +16,11 @@ clock = pygame.time.Clock()
 fps = 60
 
 # Colors
-bgColor = (202, 194, 193)
-BrickColor = (36, 156, 177)  # breakbale blue
-uBrickColor = (14, 14, 14)  # unbreakable black
-trayColor = (123, 123, 213)
+color1 = (36, 32, 56)  # unbreakable bricks
+color2 = (144, 103, 198)  # breakbale bricks
+color3 = (123, 123, 213)
+color4 = (202, 196, 206)
+
 
 # BRICK VARIABLES
 # number of brick
@@ -47,9 +48,9 @@ running = True
 pygame.font.init()
 myfont = pygame.font.SysFont('Calibri', 25)
 startTextSize = myfont.size("Press any key to start")
-startText = myfont.render("Press any key to start", True, trayColor)
+startText = myfont.render("Press any key to start", True, color2)
 gameOverTextSize = myfont.size("Game Over")
-gameOverText = myfont.render("Game Over", True, trayColor)
+gameOverText = myfont.render("Game Over", True, color1)
 
 # game launched ?
 gameRunning = 0
@@ -87,11 +88,11 @@ class wall():
         for brick in self.bricks:
             # check for unbreakable bricks
             if(brick[2] == 0):
-                color = uBrickColor
+                color = color1
             else:
-                color = BrickColor
+                color = color2
             # print border bricks
-            pygame.draw.rect(screen, (bgColor),
+            pygame.draw.rect(screen, (color4),
                              brick[3])
             # print bricks
             pygame.draw.rect(screen, (color),
@@ -109,7 +110,7 @@ class tray():
         self.speed = 8
 
     def printTray(self):
-        pygame.draw.rect(screen, trayColor, self.rect)
+        pygame.draw.rect(screen, color3, self.rect)
 
     def move(self):
         # get key pressed
@@ -135,8 +136,7 @@ class ball():
             self.x, self.y, 2*self.rad, 2*self.rad)
 
     def print(self):
-        #pygame.draw.rect(screen, (123, 123, 213), self.rect)
-        pygame.draw.circle(screen, trayColor, (self.rect.x +
+        pygame.draw.circle(screen, color3, (self.rect.x +
                            self.rad, self.rect.y + self.rad), self.rad)
 
     def move(self, ballSpeed, trayRect, wallBricks):
@@ -235,7 +235,7 @@ while running:
     # limit clock
     clock.tick(fps)
     # print background
-    screen.fill(bgColor)
+    screen.fill(color4)
 
     # print Wall
     bricksWall.printWall()
@@ -248,7 +248,7 @@ while running:
 
     # print available ball
     for ball in range(balls):
-        pygame.draw.circle(screen, trayColor,
+        pygame.draw.circle(screen, color3,
                            (width - ball*30 - 20, height - 20), 10)
 
     if gameRunning == 0:
