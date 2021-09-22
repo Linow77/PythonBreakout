@@ -192,7 +192,7 @@ class ball():
                     self.speedx *= -1
 
                 # right collision (ball) on left side of the trail
-                if self.rect.right >= trayRect.left and self.rect.right > trayRect.left + 5:
+                if self.rect.right >= trayRect.left and self.rect.right < trayRect.left + 5:
                     self.speedx *= -1
 
         #-- Check for collisions between ball and Tray --#
