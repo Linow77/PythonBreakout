@@ -19,7 +19,7 @@ fps = 60
 bgColor = (202, 194, 193)
 BrickColor = (36, 156, 177)  # breakbale blue
 uBrickColor = (14, 14, 14)  # unbreakable black
-trayColor = (156, 178, 102)
+trayColor = (123, 123, 213)
 
 # BRICK VARIABLES
 # number of brick
@@ -31,7 +31,7 @@ border = 3
 # BALL VARIABLES
 # remaining balls
 balls = 2
-ballSpeed = 4
+ballSpeed = 3
 
 # Same seed for every launched
 r.seed(1000)
@@ -81,7 +81,7 @@ class tray():
     def __init__(self):
         self.trayWidth = width / cols
         self.trayHeight = 20
-        self.x = (width - self.trayWidth)/2
+        self.x = (width - self.trayWidth)/2  # init position
         self.y = height - 40
         self.rect = pygame.Rect(
             self.x, self.y, self.trayWidth, self.trayHeight)
@@ -105,46 +105,74 @@ class tray():
 
 class ball():
     def __init__(self, ballSpeed):
-        self.width = 10
-        self.height = 10
-        self.x = (width - self.width) // 2
-        self.y = (height - 50)
+        self.rad = 10
+        self.x = width // 2 - self.rad  # init position of the rectangle
+        self.y = (height - 70)          # init position of the rectangle
         self.speedx = ballSpeed
         self.speedy = -ballSpeed
+        self.rect = pygame.Rect(
+            self.x, self.y, 2*self.rad, 2*self.rad)
 
     def print(self):
-        pygame.draw.circle(screen, trayColor, (self.x, self.y), self.width)
+        #pygame.draw.rect(screen, (123, 123, 213), self.rect)
+        pygame.draw.circle(screen, trayColor, (self.rect.x +
+                           self.rad, self.rect.y + self.rad), self.rad)
 
-    def move(self, ballSpeed):
+    def move(self, ballSpeed, trayRect):
         global balls
-        self.x += self.speedx
-        self.y += self.speedy
+        # move the rectangle containing the ball
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
 
-        # check for borders
+        #-- Check for screen borders --#
         # left and right borders
-        if self.x > width - self.width or self.x - self.width < 0:
+        if self.rect.right > width or self.rect.left < 0:
             self.speedx *= -1
 
         # top border
-        if self.y - self.height < 0:
+        if self.rect.top < 0:
             self.speedy *= -1
 
-        # bottom border (it trail touch ball)
-        if self.y > height - 50:
-            # check if trail touch
-
-            # if no trail
-            # get a new ball
+        # bottom border
+        if self.rect.bottom > height:
+            # get a new ball if availabe
             if balls > 0:
+                print("ball lost")
                 # delete a ball
                 balls -= 1
                 # reset ball position
-                self.x = (width - self.width) // 2
-                self.y = (height - 50)
+                self.rect.x = width // 2 - self.rad
+                self.rect.y = (height - 70)
                 self.speedx = ballSpeed
                 self.speedy = -ballSpeed
-            else:
+            else:  # no ball left
                 print("gameOver")
+        #-- Check for screen borders --#
+
+        #-- Check for collisions between ball and Tray --#
+        # if ball is at trail height or under
+        if self.rect.bottom >= height - 40:
+            # check if ball is on top of the trail (between the 5px margin)
+            if self.rect.bottom >= height - 40 and self.rect.bottom < height - 35:
+                # check if the ball can touch the trail
+                if self.rect.right >= trayRect.left and self.rect.left < trayRect.right:
+                    # resend ball
+                    self.speedy *= -1
+                    # change direction on with a specific angle
+                    print("create redirection on x")
+
+            else:  # ball is on the side of the trail (the ball is lost)
+                # check for collision between ball and side of the trail (5px margin)
+
+                # left collision (ball) on right side of the trail
+                if self.rect.left <= trayRect.right and self.rect.left > trayRect.right - 5:
+                    self.speedx *= -1
+
+                # right collision (ball) on left side of the trail
+                if self.rect.right >= trayRect.left and self.rect.right > trayRect.left + 5:
+                    self.speedx *= -1
+
+        #-- Check for collisions between ball and Tray --#
 
 
 bricksWall = wall()
@@ -170,7 +198,7 @@ while running:
 
     # move
     playerTray.move()
-    playerBall.move(ballSpeed)
+    playerBall.move(ballSpeed, playerTray.rect)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
