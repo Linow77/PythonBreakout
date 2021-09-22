@@ -101,7 +101,7 @@ class wall():
 
 class tray():
     def __init__(self):
-        self.trayWidth = brickWidth
+        self.trayWidth = brickWidth * 0.7
         self.trayHeight = 10
         self.x = (width - self.trayWidth)/2  # init position
         self.y = trayPositionY
@@ -165,7 +165,7 @@ class ball():
             self.speedy = -ballSpeed
 
             # reset tray position
-            trayRect.x = (width - brickWidth)/2  # init position
+            trayRect.x = (width - (brickWidth*0.7))/2  # init position
 
             # get a new ball if availabe
             if balls > 0:
