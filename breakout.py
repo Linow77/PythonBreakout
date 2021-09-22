@@ -68,13 +68,18 @@ class wall():
 
     def createBricks(self):
         rowNumber = 0
-
         for row in range(rows):
 
             colNumber = 0
             for col in range(cols):
+
+                brick = pygame.Rect(
+                    colNumber*self.brickWidth, rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
+                # store brick
                 # 25% unbreakable bricks
-                self.bricks.append((colNumber, rowNumber, r.randint(0, 3)))
+                self.bricks.append(
+                    (colNumber, rowNumber, r.randint(0, 3), brick))
+
                 colNumber += 1
             rowNumber += 1
 
@@ -87,10 +92,10 @@ class wall():
                 color = BrickColor
             # print border bricks
             pygame.draw.rect(screen, (bgColor),
-                             (brick[0]*self.brickWidth, brick[1]*self.brickHeight, self.brickWidth, self.brickHeight))
+                             brick[3])
             # print bricks
             pygame.draw.rect(screen, (color),
-                             ((brick[0]*self.brickWidth + border), (brick[1]*self.brickHeight + border), self.brickWidth - 2*border, self.brickHeight - 2*border))
+                             ((brick[3].x + border), (brick[3].y + border), self.brickWidth - 2*border, self.brickHeight - 2*border))
 
 
 class tray():
@@ -134,7 +139,7 @@ class ball():
         pygame.draw.circle(screen, trayColor, (self.rect.x +
                            self.rad, self.rect.y + self.rad), self.rad)
 
-    def move(self, ballSpeed, trayRect):
+    def move(self, ballSpeed, trayRect, wallBricks):
         global balls
         global gameRunning
         # move the rectangle containing the ball
@@ -173,7 +178,7 @@ class ball():
                 global gameover
                 gameover = 1
 
-        #-- Check for screen borders --#
+        #-- End Check for screen borders --#
 
         #-- Check for collisions between ball and Tray --#
         if self.rect.colliderect(trayRect):
@@ -197,11 +202,27 @@ class ball():
                     else:  # if same direction as the tray don't reverse direction but increase speed
                         self.speedx -= 3
 
-        #-- Check for collisions between ball and Tray --#
+        #-- End Check for collisions between ball and Tray --#
 
         #-- Check for collisions between ball and Bricks --#
 
-        #-- Check for collisions between ball and Bricks --#
+        for brick in wallBricks:
+            if(self.rect.colliderect(brick[3])):
+                # check if collision is on top or at bottom of the brick
+                if (self.rect.top <= brick[3].bottom and self.rect.top > brick[3].bottom - 5):
+                    # top
+                    self.speedy *= -1
+                elif (self.rect.bottom >= brick[3].top and self.rect.bottom < brick[3].top + 5):
+                    # bottom
+                    self.speedy *= -1
+                else:  # side
+                    self.speedx *= -1
+
+                # delete the brick if breakable
+                if(brick[2] != 0):
+                    wallBricks.remove(brick)
+
+        #-- End Check for collisions between ball and Bricks --#
 
 
 bricksWall = wall()
@@ -241,7 +262,7 @@ while running:
 
         # move ball and tray
         playerTray.move()
-        playerBall.move(ballSpeed, playerTray.rect)
+        playerBall.move(ballSpeed, playerTray.rect, bricksWall.bricks)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
