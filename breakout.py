@@ -5,7 +5,7 @@ pygame.init()
 
 # screen size
 width = 640
-height = 480
+height = 500
 screen = pygame.display.set_mode((width, height))
 
 # title
@@ -33,7 +33,10 @@ brickWidth = width // cols
 # remaining balls
 balls = 2
 ballSpeed = 3
+ballPositionY = height - 90
 
+# TRAY VARIABLES
+trayPositionY = height - 60
 # Same seed for every launched
 r.seed(1000)
 
@@ -95,7 +98,7 @@ class tray():
         self.trayWidth = brickWidth
         self.trayHeight = 20
         self.x = (width - self.trayWidth)/2  # init position
-        self.y = height - 40
+        self.y = trayPositionY
         self.rect = pygame.Rect(
             self.x, self.y, self.trayWidth, self.trayHeight)
         self.speed = 8
@@ -120,7 +123,7 @@ class ball():
     def __init__(self, ballSpeed):
         self.rad = 10
         self.x = width // 2 - self.rad  # init position of the rectangle
-        self.y = (height - 70)          # init position of the rectangle
+        self.y = ballPositionY          # init position of the rectangle
         self.speedx = ballSpeed
         self.speedy = -ballSpeed
         self.rect = pygame.Rect(
@@ -152,7 +155,7 @@ class ball():
             # reset ball position
 
             self.rect.x = width // 2 - self.rad
-            self.rect.y = (height - 70)
+            self.rect.y = ballPositionY
             self.speedx = ballSpeed
             self.speedy = -ballSpeed
 
@@ -174,9 +177,9 @@ class ball():
 
         #-- Check for collisions between ball and Tray --#
         # if ball is at trail height or under
-        if self.rect.bottom >= height - 40:
+        if self.rect.bottom >= trayPositionY:
             # check if ball is on top of the trail (between the 5px margin)
-            if self.rect.bottom >= height - 40 and self.rect.bottom < height - 35:
+            if self.rect.bottom >= trayPositionY and self.rect.bottom < trayPositionY + 5:
                 # check if the ball can touch the trail
                 if self.rect.right >= trayRect.left and self.rect.left < trayRect.right:
                     # resend ball
@@ -185,6 +188,7 @@ class ball():
                     print("create redirection on x")
 
             else:  # ball is on the side of the trail (the ball is lost)
+                # COLISION ARE NOT GOOG WHEN BALL IS IN THE SAME DIRECTION
                 # check for collision between ball and side of the trail (5px margin)
 
                 # left collision (ball) on right side of the trail
@@ -219,6 +223,11 @@ while running:
     # print ball
     playerBall.print()
 
+    # print available ball
+    for ball in range(balls):
+        pygame.draw.circle(screen, trayColor,
+                           (width - ball*30 - 20, height - 20), 10)
+
     if gameRunning == 0:
         # print message to start the game
         screen.blit(
@@ -227,7 +236,8 @@ while running:
         screen.blit(
             gameOverText, ((width - gameOverTextSize[0])//2, (height + 60) // 2))
     else:
-        # move
+
+        # move ball and tray
         playerTray.move()
         playerBall.move(ballSpeed, playerTray.rect)
 
