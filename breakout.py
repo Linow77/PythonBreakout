@@ -96,7 +96,7 @@ class wall():
 class tray():
     def __init__(self):
         self.trayWidth = brickWidth
-        self.trayHeight = 20
+        self.trayHeight = 10
         self.x = (width - self.trayWidth)/2  # init position
         self.y = trayPositionY
         self.rect = pygame.Rect(
@@ -176,30 +176,32 @@ class ball():
         #-- Check for screen borders --#
 
         #-- Check for collisions between ball and Tray --#
-        # if ball is at trail height or under
-        if self.rect.bottom >= trayPositionY:
+        if self.rect.colliderect(trayRect):
+
             # check if ball is on top of the trail (between the 5px margin)
-            if self.rect.bottom >= trayPositionY and self.rect.bottom < trayPositionY + 5:
-                # check if the ball can touch the trail
-                if self.rect.right >= trayRect.left and self.rect.left < trayRect.right:
-                    # resend ball
-                    self.speedy *= -1
-                    # change direction on with a specific angle
-                    print("create redirection on x")
+            if self.rect.bottom >= trayPositionY and self.rect.bottom < trayPositionY + 5 and self.speedy > 0:
+                self.speedy *= -1
 
-            else:  # ball is on the side of the trail (the ball is lost)
-                # COLISION ARE NOT GOOG WHEN BALL IS IN THE SAME DIRECTION
-                # check for collision between ball and side of the trail (5px margin)
-
-                # left collision (ball) on right side of the trail
+            else:  # collision with side
                 if self.rect.left <= trayRect.right and self.rect.left > trayRect.right - 5:
-                    self.speedx *= -1
+                    # check direction of the ball
+                    if self.speedx < 0:
+                        self.speedx *= -1
+                    else:  # if same direction as the tray don't reverse direction but increase speed
+                        self.speedx += 3
 
-                # right collision (ball) on left side of the trail
-                if self.rect.right >= trayRect.left and self.rect.right < trayRect.left + 5:
-                    self.speedx *= -1
+                elif self.rect.right >= trayRect.left and self.rect.right < trayRect.left + 5:
+                    # check direction of the ball
+                    if self.speedx > 0:
+                        self.speedx *= -1
+                    else:  # if same direction as the tray don't reverse direction but increase speed
+                        self.speedx -= 2
 
         #-- Check for collisions between ball and Tray --#
+
+        #-- Check for collisions between ball and Bricks --#
+
+        #-- Check for collisions between ball and Bricks --#
 
 
 bricksWall = wall()
