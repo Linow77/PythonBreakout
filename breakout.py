@@ -195,7 +195,7 @@ class ball():
                     if self.speedx > 0:
                         self.speedx *= -1
                     else:  # if same direction as the tray don't reverse direction but increase speed
-                        self.speedx -= 2
+                        self.speedx -= 3
 
         #-- Check for collisions between ball and Tray --#
 
