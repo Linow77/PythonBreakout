@@ -27,6 +27,7 @@ rows = 6
 cols = 5
 # border of brick
 border = 3
+brickWidth = width // cols
 
 # BALL VARIABLES
 # remaining balls
@@ -39,6 +40,18 @@ r.seed(1000)
 # keep window open
 running = True
 
+# Start Game Text
+pygame.font.init()
+myfont = pygame.font.SysFont('Calibri', 25)
+startTextSize = myfont.size("Press any key to start")
+startText = myfont.render("Press any key to start", True, trayColor)
+gameOverTextSize = myfont.size("Game Over")
+gameOverText = myfont.render("Game Over", True, trayColor)
+
+# game launched ?
+gameRunning = 0
+gameover = 0
+
 # wall containing all the bricks
 
 
@@ -46,7 +59,7 @@ class wall():
     def __init__(self):
         self.width = width
         self.height = height // 2
-        self.brickWidth = width // cols
+        self.brickWidth = brickWidth
         self.brickHeight = self.height // rows
         self.bricks = []
 
@@ -79,7 +92,7 @@ class wall():
 
 class tray():
     def __init__(self):
-        self.trayWidth = width / cols
+        self.trayWidth = brickWidth
         self.trayHeight = 20
         self.x = (width - self.trayWidth)/2  # init position
         self.y = height - 40
@@ -120,6 +133,7 @@ class ball():
 
     def move(self, ballSpeed, trayRect):
         global balls
+        global gameRunning
         # move the rectangle containing the ball
         self.rect.x += self.speedx
         self.rect.y += self.speedy
@@ -135,18 +149,27 @@ class ball():
 
         # bottom border
         if self.rect.bottom > height:
+            # reset ball position
+
+            self.rect.x = width // 2 - self.rad
+            self.rect.y = (height - 70)
+            self.speedx = ballSpeed
+            self.speedy = -ballSpeed
+
+            # reset tray position
+            trayRect.x = (width - brickWidth)/2  # init position
+
             # get a new ball if availabe
             if balls > 0:
                 print("ball lost")
+                gameRunning = 0
                 # delete a ball
                 balls -= 1
-                # reset ball position
-                self.rect.x = width // 2 - self.rad
-                self.rect.y = (height - 70)
-                self.speedx = ballSpeed
-                self.speedy = -ballSpeed
+
             else:  # no ball left
-                print("gameOver")
+                global gameover
+                gameover = 1
+
         #-- Check for screen borders --#
 
         #-- Check for collisions between ball and Tray --#
@@ -196,12 +219,23 @@ while running:
     # print ball
     playerBall.print()
 
-    # move
-    playerTray.move()
-    playerBall.move(ballSpeed, playerTray.rect)
+    if gameRunning == 0:
+        # print message to start the game
+        screen.blit(
+            startText, ((width - startTextSize[0])//2, (height + 60) // 2))
+    elif gameover:
+        screen.blit(
+            gameOverText, ((width - gameOverTextSize[0])//2, (height + 60) // 2))
+    else:
+        # move
+        playerTray.move()
+        playerBall.move(ballSpeed, playerTray.rect)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.KEYDOWN:
+            gameRunning = 1
 
     pygame.display.update()
