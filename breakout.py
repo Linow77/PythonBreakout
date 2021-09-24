@@ -38,6 +38,8 @@ ballPositionY = height - 90
 
 # TRAY VARIABLES
 trayPositionY = height - 60
+trayWidth = brickWidth
+
 # Same seed for every launched
 r.seed(1000)
 
@@ -101,7 +103,7 @@ class wall():
 
 class tray():
     def __init__(self):
-        self.trayWidth = brickWidth * 0.7
+        self.trayWidth = trayWidth
         self.trayHeight = 10
         self.x = (width - self.trayWidth)/2  # init position
         self.y = trayPositionY
@@ -165,7 +167,7 @@ class ball():
             self.speedy = -ballSpeed
 
             # reset tray position
-            trayRect.x = (width - (brickWidth*0.7))/2  # init position
+            trayRect.x = (width - trayWidth)/2  # init position
 
             # get a new ball if availabe
             if balls > 0:
@@ -186,6 +188,27 @@ class ball():
             # check if ball is on top of the trail (between the 5px margin)
             if self.rect.bottom >= trayPositionY and self.rect.bottom < trayPositionY + 5 and self.speedy > 0:
                 self.speedy *= -1
+                # change x if not on the middle of the tray
+                print(self.rect.x)
+                if self.rect.x >= trayRect.x and self.rect.x < trayRect.x + (0.2 * trayWidth):
+                    print("gauche")
+                    self.speedx *= 1
+
+                if self.rect.x >= trayRect.x + (0.2 * trayWidth) and self.rect.x < trayRect.x + (0.4 * trayWidth):
+                    print("gauche-milieu")
+                    self.speedx *= 1
+
+                if self.rect.x >= trayRect.x + (0.4 * trayWidth) and self.rect.x < trayRect.x + (0.6 * trayWidth):
+                    print("milieu")
+                    self.speedx *= 1
+
+                if self.rect.x >= trayRect.x + (0.6 * trayWidth) and self.rect.x < trayRect.x + (0.8 * trayWidth):
+                    print("droite-milieu")
+                    self.speedx *= 1
+
+                if self.rect.x >= trayRect.x + (0.8 * trayWidth) and self.rect.x < trayRect.x + trayWidth:
+                    print("droite")
+                    self.speedx *= 1
 
             else:  # collision with side
                 if self.rect.left <= trayRect.right and self.rect.left > trayRect.right - 5:
