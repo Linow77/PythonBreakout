@@ -1,7 +1,9 @@
 import pygame
 import random as r
+import math
 
 pygame.init()
+
 
 # screen size
 width = 640
@@ -21,7 +23,6 @@ color2 = (144, 103, 198)  # breakbale bricks
 color3 = (123, 123, 213)
 color4 = (202, 196, 206)
 
-
 # BRICK VARIABLES
 # number of brick
 rows = 6
@@ -30,17 +31,21 @@ cols = 5
 border = 3
 brickWidth = width // cols
 
+
 # BALL VARIABLES
 # remaining balls
 balls = 2
-ballSpeed = 3
+ballSpeed = 3  # on Axes at the beginning
+velocity = math.sqrt(2*(ballSpeed**2))
 ballPositionY = height - 90
 
 # TRAY VARIABLES
 trayPositionY = height - 60
 trayWidth = brickWidth
 
-# Same seed for every launched
+# margin Error
+margin = 5
+# Same random seed for every launched
 r.seed(1000)
 
 # keep window open
@@ -136,10 +141,13 @@ class ball():
         self.speedy = -ballSpeed
         self.rect = pygame.Rect(
             self.x, self.y, 2*self.rad, 2*self.rad)
+        self.directionH = 1
+        self.angle = -1
+        self.newAngle = -1
 
-    def print(self):
+    def printball(self):
         pygame.draw.circle(screen, color3, (self.rect.x +
-                           self.rad, self.rect.y + self.rad), self.rad)
+                                            self.rad, self.rect.y + self.rad), self.rad)
 
     def move(self, ballSpeed, trayRect, wallBricks):
         global balls
@@ -171,7 +179,7 @@ class ball():
 
             # get a new ball if availabe
             if balls > 0:
-                print("ball lost")
+                #print("ball lost")
                 gameRunning = 0
                 # delete a ball
                 balls -= 1
@@ -186,31 +194,273 @@ class ball():
         if self.rect.colliderect(trayRect):
 
             # check if ball is on top of the trail (between the 5px margin)
+            # if (abs(self.rect.bottom - trayPositionY) < margin and self.speedy > 0):
             if self.rect.bottom >= trayPositionY and self.rect.bottom < trayPositionY + 5 and self.speedy > 0:
-                self.speedy *= -1
+                #print("AVANT vitesse x :"+str(self.speedx))
+                #print("AVANT vitesse y :"+str(self.speedy))
+
+                # calculate angle between the ball's path and the trail
+                if self.speedx == 0:
+                    self.angle = 90
+                else:
+                    self.angle = abs(math.degrees(
+                        math.atan(self.speedy/abs(self.speedx))))
+                # #print("angle:"+str(self.angle))
+                if(self.speedx > 0):
+                    self.directionH = 1  # from the left
+                else:
+                    self.directionH = -1  # from the right
+
+                #print("direction H:"+str(self.directionH))
+
                 # change x if not on the middle of the tray
-                print(self.rect.x)
-                if self.rect.x >= trayRect.x and self.rect.x < trayRect.x + (0.2 * trayWidth):
-                    print("gauche")
-                    self.speedx *= 1
+                # LEFT PART
+                if self.rect.right >= trayRect.x and self.rect.left < trayRect.x + (0.2 * trayWidth):
+                    # #print("gauche")
+                    if self.directionH == 1:  # from the left
+                        # increase angle by 35%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*1.35
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        elif self.angle > 60:  # increase angle by 25%
+                            # #print("high")
+                            self.newAngle = self.angle*1.25
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # increase angle by 30%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*1.30
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
 
-                if self.rect.x >= trayRect.x + (0.2 * trayWidth) and self.rect.x < trayRect.x + (0.4 * trayWidth):
-                    print("gauche-milieu")
-                    self.speedx *= 1
+                    else:  # from the right
+                        # reduce angle by 35%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*0.65
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        elif self.angle > 60:  # reduce angle by 25%
+                            # #print("high")
+                            self.newAngle = self.angle*0.75
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # reduce angle by 30%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*0.70
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
 
-                if self.rect.x >= trayRect.x + (0.4 * trayWidth) and self.rect.x < trayRect.x + (0.6 * trayWidth):
-                    print("milieu")
-                    self.speedx *= 1
+                # MIDDLE LEFT PART
+                elif self.rect.right >= trayRect.x + (0.2 * trayWidth) and self.rect.left < trayRect.x + (0.4 * trayWidth):
+                    # #print("gauche-milieu")
 
-                if self.rect.x >= trayRect.x + (0.6 * trayWidth) and self.rect.x < trayRect.x + (0.8 * trayWidth):
-                    print("droite-milieu")
-                    self.speedx *= 1
+                    if self.directionH == 1:  # from the left
+                        # increase angle by 20%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*1.2
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        elif self.angle > 60:  # increase angle by 10%
+                            # #print("high")
+                            self.newAngle = self.angle*1.1
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # increase angle by 15%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*1.15
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
 
-                if self.rect.x >= trayRect.x + (0.8 * trayWidth) and self.rect.x < trayRect.x + trayWidth:
-                    print("droite")
-                    self.speedx *= 1
+                    else:  # from the right
+                        # reduce angle by 20%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*0.8
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        elif self.angle > 60:  # reduce angle by 10%
+                            # #print("high")
+                            self.newAngle = self.angle*0.9
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # reduce angle by 15%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*0.85
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = - \
+                                (math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
 
+                # MIDDLE PART
+                elif self.rect.right >= trayRect.x + (0.4 * trayWidth) and self.rect.left < trayRect.x + (0.6 * trayWidth):
+                    # angle is not changed
+                    # #print("milieu")
+                    self.speedy *= -1
+
+                # MIDDLE RIGHT PART
+                elif self.rect.right >= trayRect.x + (0.6 * trayWidth) and self.rect.left < trayRect.x + (0.8 * trayWidth):
+                    # #print("droite-milieu")
+                    if self.directionH == 1:  # from the left
+                        # reduce angle by 20%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*0.8
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                        elif self.angle > 60:  # reduce angle by 10%
+                            # #print("high")
+                            self.newAngle = self.angle*0.9
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # send the ball in opposite direction
+                            # reduce angle by 15%
+                            # #print("middle")
+                            self.newAngle = self.angle*0.85
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                    else:  # from the right
+                        if self.angle < 30:
+                            # #print("low")
+                            # increase angle by 20%
+                            self.newAngle = self.angle*1.2
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                        elif self.angle > 60:  # increase angle by 10%
+                            # #print("high")
+                            self.newAngle = self.angle*1.1
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # increase angle by 15%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*1.15
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                # RIGHT PART
+                elif self.rect.right >= trayRect.x + (0.8 * trayWidth) and self.rect.left < trayRect.x + trayWidth:
+                    # #print("droite")
+                    if self.directionH == 1:  # from the left
+                        # reduce angle by 35%
+                        if self.angle < 30:
+                            # #print("low")
+                            self.newAngle = self.angle*0.65
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                        elif self.angle > 60:  # reduce angle by 25%
+                            # #print("high")
+                            self.newAngle = self.angle*0.75
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # send the ball in opposite direction
+                            # reduce angle by 30%
+                            # #print("middle")
+                            self.newAngle = self.angle*0.70
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                    else:  # from the right
+                        if self.angle < 30:
+                            # #print("low")
+                            # increase angle by 35%
+                            self.newAngle = self.angle*1.35
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                        elif self.angle > 60:  # increase angle by 25%
+                            # #print("high")
+                            self.newAngle = self.angle*1.25
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # increase angle by 30%
+                            # #print("middle")  # OK
+                            self.newAngle = self.angle*1.30
+                            #print("new angle:"+str(self.newAngle))
+                            self.speedx = (
+                                math.cos(math.radians(self.newAngle)) * velocity)
+                            self.speedy = - \
+                                (math.sin(math.radians(self.newAngle)) * velocity)
+
+                #print("vitesse x :"+str(self.speedx))
+                #print("vitesse y :"+str(self.speedy))
+            # SIDE COLLISIONS
             else:  # collision with side
+                # #print("side")
+                # if (abs(self.rect.left - trayRect.right) < margin):
                 if self.rect.left <= trayRect.right and self.rect.left > trayRect.right - 5:
                     # check direction of the ball
                     if self.speedx < 0:
@@ -218,6 +468,7 @@ class ball():
                     else:  # if same direction as the tray don't reverse direction but increase speed
                         self.speedx += 3
 
+                # elif (abs(self.rect.right - trayRect.left) < margin):
                 elif self.rect.right >= trayRect.left and self.rect.right < trayRect.left + 5:
                     # check direction of the ball
                     if self.speedx > 0:
@@ -232,13 +483,19 @@ class ball():
         for brick in wallBricks:
             if(self.rect.colliderect(brick[3])):
                 # check if collision is on top or at bottom of the brick
-                if (self.rect.top <= brick[3].bottom and self.rect.top > brick[3].bottom - 5):
+                if (abs(self.rect.top - brick[3].bottom) < margin and self.speedy < 0):
+                    # if (self.rect.top <= brick[3].bottom and self.rect.top > brick[3].bottom - 5):
                     # top
                     self.speedy *= -1
-                elif (self.rect.bottom >= brick[3].top and self.rect.bottom < brick[3].top + 5):
+                elif (abs(self.rect.bottom - brick[3].top) < margin and self.speedy > 0):
+                    # elif (self.rect.bottom >= brick[3].top and self.rect.bottom < brick[3].top + 5):
                     # bottom
                     self.speedy *= -1
-                else:  # side
+                elif (abs(self.rect.left - brick[3].right) < margin and self.speedx < 0):
+                    # right
+                    self.speedx *= -1
+                elif (abs(self.rect.right - brick[3].left) < margin and self.speedx > 0):
+                    # left
                     self.speedx *= -1
 
                 # delete the brick if breakable
@@ -251,7 +508,7 @@ class ball():
 bricksWall = wall()
 bricksWall.createBricks()
 playerTray = tray()
-# print(bricksWall.bricks)
+# #print(bricksWall.bricks)
 playerBall = ball(ballSpeed)
 
 while running:
@@ -267,7 +524,7 @@ while running:
     playerTray.printTray()
 
     # print ball
-    playerBall.print()
+    playerBall.printball()
 
     # print available ball
     for ball in range(balls):
