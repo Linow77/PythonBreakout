@@ -475,7 +475,7 @@ class ball():
                         self.speedx *= -1
                     else:  # if same direction as the tray don't reverse direction but increase speed
                         self.speedx -= 3
-
+        #print("vitesse : x="+str(self.speedx) + " y="+str(self.speedy))
         #-- End Check for collisions between ball and Tray --#
 
         #-- Check for collisions between ball and Bricks --#
@@ -503,6 +503,10 @@ class ball():
                     wallBricks.remove(brick)
 
         #-- End Check for collisions between ball and Bricks --#
+
+    def gravity(self):
+        if (self.speedy > 0 and self.speedy < 1):  # stuck horizontally
+            self.speedy = 1
 
 
 bricksWall = wall()
@@ -543,6 +547,8 @@ while running:
         # move ball and tray
         playerTray.move()
         playerBall.move(ballSpeed, playerTray.rect, bricksWall.bricks)
+        # add gravity to prevent ball stuck
+        playerBall.gravity()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
