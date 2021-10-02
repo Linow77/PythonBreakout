@@ -162,11 +162,11 @@ class ball():
             self.speedx *= -1
 
         # top border
-        if self.rect.top < 0:
+        elif self.rect.top < 0:
             self.speedy *= -1
 
         # bottom border
-        if self.rect.bottom > height:
+        elif self.rect.bottom > height:
             # reset ball position
 
             self.rect.x = width // 2 - self.rad
@@ -191,7 +191,7 @@ class ball():
         #-- End Check for screen borders --#
 
         #-- Check for collisions between ball and Tray --#
-        if self.rect.colliderect(trayRect):
+        elif self.rect.colliderect(trayRect):
 
             # check if ball is on top of the trail (between the 5px margin)
             # if (abs(self.rect.bottom - trayPositionY) < margin and self.speedy > 0):
@@ -480,27 +480,28 @@ class ball():
 
         #-- Check for collisions between ball and Bricks --#
 
-        for brick in wallBricks:
-            if(self.rect.colliderect(brick[3])):
-                # check if collision is on top or at bottom of the brick
-                if (abs(self.rect.top - brick[3].bottom) < margin and self.speedy < 0):
-                    # if (self.rect.top <= brick[3].bottom and self.rect.top > brick[3].bottom - 5):
-                    # top
-                    self.speedy *= -1
-                elif (abs(self.rect.bottom - brick[3].top) < margin and self.speedy > 0):
-                    # elif (self.rect.bottom >= brick[3].top and self.rect.bottom < brick[3].top + 5):
-                    # bottom
-                    self.speedy *= -1
-                elif (abs(self.rect.left - brick[3].right) < margin and self.speedx < 0):
-                    # right
-                    self.speedx *= -1
-                elif (abs(self.rect.right - brick[3].left) < margin and self.speedx > 0):
-                    # left
-                    self.speedx *= -1
+        else:
+            for brick in wallBricks:
+                if(self.rect.colliderect(brick[3])):
+                    # check if collision is on top or at bottom of the brick
+                    if (abs(self.rect.top - brick[3].bottom) < margin and self.speedy < 0):
+                        # if (self.rect.top <= brick[3].bottom and self.rect.top > brick[3].bottom - 5):
+                        # top
+                        self.speedy *= -1
+                    elif (abs(self.rect.bottom - brick[3].top) < margin and self.speedy > 0):
+                        # elif (self.rect.bottom >= brick[3].top and self.rect.bottom < brick[3].top + 5):
+                        # bottom
+                        self.speedy *= -1
+                    elif (abs(self.rect.left - brick[3].right) < margin and self.speedx < 0):
+                        # right
+                        self.speedx *= -1
+                    elif (abs(self.rect.right - brick[3].left) < margin and self.speedx > 0):
+                        # left
+                        self.speedx *= -1
 
-                # delete the brick if breakable
-                if(brick[2] != 0):
-                    wallBricks.remove(brick)
+                    # delete the brick if breakable
+                    if(brick[2] != 0):
+                        wallBricks.remove(brick)
 
         #-- End Check for collisions between ball and Bricks --#
 
