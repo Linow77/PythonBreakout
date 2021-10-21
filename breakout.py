@@ -196,172 +196,172 @@ class ball():
         #-- End Check for screen borders --#
 
         #-- Check for collisions between ball and paddle --#
-        elif self.rect.colliderect(paddleRect):
+        elif self.rect.y > paddlePositionY - 2*self.rad:
+            if self.rect.colliderect(paddleRect):
 
-            # TOP COLLISION
-            # check if ball is on top of the trail (between the 5px margin)
-            if(abs(self.rect.bottom - paddlePositionY) < margin and self.speedy > 0):
+                # TOP COLLISION
+                # check if ball is on top of the trail (between the 5px margin)
+                if(abs(self.rect.bottom - paddlePositionY) < margin and self.speedy > 0):
 
-                # calculate angle between the ball's path and the trail
-                if self.speedx == 0:
-                    self.angle = 90
-                else:
-                    self.angle = abs(math.degrees(
-                        math.atan(self.speedy/abs(self.speedx))))
+                    # calculate angle between the ball's path and the trail
+                    if self.speedx == 0:
+                        self.angle = 90
+                    else:
+                        self.angle = abs(math.degrees(
+                            math.atan(self.speedy/abs(self.speedx))))
 
-                if(self.speedx > 0):
-                    self.directionH = 1  # from the left
-                else:
-                    self.directionH = -1  # from the right
+                    if(self.speedx > 0):
+                        self.directionH = 1  # from the left
+                    else:
+                        self.directionH = -1  # from the right
 
-                # change x if not on the middle of the paddle
+                    # change x if not on the middle of the paddle
 
-                # LEFT PART
-                if self.rect.right >= paddleRect.x and self.rect.left < paddleRect.x + (0.2 * paddleWidth):
+                    # LEFT PART
+                    if self.rect.right >= paddleRect.x and self.rect.left < paddleRect.x + (0.2 * paddleWidth):
 
-                    if self.directionH == 1:  # from the left
-                        # increase angle by 35%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*1.35
-
-                        elif self.angle > 60:  # increase angle by 25%
-                            self.newAngle = self.angle*1.25
-
-                        else:  # increase angle by 30%
-                            self.newAngle = self.angle*1.30
-
-                    else:  # from the right
-                        # reduce angle by 35%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*0.65
-
-                        elif self.angle > 60:  # reduce angle by 25%
-                            self.newAngle = self.angle*0.75
-
-                        else:  # reduce angle by 30%
-                            self.newAngle = self.angle*0.70
-
-                    self.speedx = - \
-                        (math.cos(math.radians(self.newAngle)) * velocity)
-                    self.speedy = - \
-                        (math.sin(math.radians(self.newAngle)) * velocity)
-
-                # MIDDLE LEFT PART
-                elif self.rect.right >= paddleRect.x + (0.2 * paddleWidth) and self.rect.left < paddleRect.x + (0.4 * paddleWidth):
-
-                    if self.directionH == 1:  # from the left
-                        # increase angle by 20%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*1.2
-
-                        elif self.angle > 60:  # increase angle by 10%
-                            self.newAngle = self.angle*1.1
-
-                        else:  # increase angle by 15%
-                            self.newAngle = self.angle*1.15
-
-                    else:  # from the right
-                        # reduce angle by 20%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*0.8
-
-                        elif self.angle > 60:  # reduce angle by 10%
-                            self.newAngle = self.angle*0.9
-
-                        else:  # reduce angle by 15%
-                            self.newAngle = self.angle*0.85
-
-                    self.speedx = - \
-                        (math.cos(math.radians(self.newAngle)) * velocity)
-                    self.speedy = - \
-                        (math.sin(math.radians(self.newAngle)) * velocity)
-
-                elif self.rect.right >= paddleRect.x + (0.4 * paddleWidth) and self.rect.left < paddleRect.x + (0.6 * paddleWidth):
-                    # angle is not changed
-                    self.speedy *= -1
-
-                # MIDLE RIGHT PART
-                elif self.rect.right >= paddleRect.x + (0.6 * paddleWidth) and self.rect.left < paddleRect.x + (0.8 * paddleWidth):
-
-                    if self.directionH == 1:  # from the left
-                        # reduce angle by 20%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*0.8
-
-                        elif self.angle > 60:  # reduce angle by 10%
-                            self.newAngle = self.angle*0.9
-
-                        else:  # send the ball in opposite direction
-                            # reduce angle by 15%
-                            self.newAngle = self.angle*0.85
-
-                    else:  # from the right
-                        if self.angle < 30:
-                            # increase angle by 20%
-                            self.newAngle = self.angle*1.2
-
-                        elif self.angle > 60:  # increase angle by 10%
-                            self.newAngle = self.angle*1.1
-
-                        else:  # increase angle by 15%
-                            self.newAngle = self.angle*1.15
-
-                    self.speedx = \
-                        (math.cos(math.radians(self.newAngle)) * velocity)
-                    self.speedy = - \
-                        (math.sin(math.radians(self.newAngle)) * velocity)
-
-                # RIGHT PART
-                elif self.rect.right >= paddleRect.x + (0.8 * paddleWidth) and self.rect.left < paddleRect.x + paddleWidth:
-                    if self.directionH == 1:  # from the left
-                        # reduce angle by 35%
-                        if self.angle < 30:
-                            self.newAngle = self.angle*0.65
-
-                        elif self.angle > 60:  # reduce angle by 25%
-                            self.newAngle = self.angle*0.75
-
-                        else:  # send the ball in opposite direction
-                            # reduce angle by 30%
-                            self.newAngle = self.angle*0.70
-
-                    else:  # from the right
-                        if self.angle < 30:
+                        if self.directionH == 1:  # from the left
                             # increase angle by 35%
-                            self.newAngle = self.angle*1.35
+                            if self.angle < 30:
+                                self.newAngle = self.angle*1.35
 
-                        elif self.angle > 60:  # increase angle by 25%
-                            self.newAngle = self.angle*1.25
+                            elif self.angle > 60:  # increase angle by 25%
+                                self.newAngle = self.angle*1.25
 
-                        else:  # increase angle by 30%
-                            self.newAngle = self.angle*1.30
+                            else:  # increase angle by 30%
+                                self.newAngle = self.angle*1.30
 
-                    self.speedx = \
-                        (math.cos(math.radians(self.newAngle)) * velocity)
-                    self.speedy = - \
-                        (math.sin(math.radians(self.newAngle)) * velocity)
+                        else:  # from the right
+                            # reduce angle by 35%
+                            if self.angle < 30:
+                                self.newAngle = self.angle*0.65
 
-            # SIDES COLLISIONS
-            else:  # collision with side
-                if (abs(self.rect.left - paddleRect.right) < margin):
-                    # check direction of the ball
-                    if self.speedx < 0:
-                        self.speedx *= -1
-                    else:  # if same direction as the paddle don't reverse direction but increase speed
-                        self.speedx += 3
+                            elif self.angle > 60:  # reduce angle by 25%
+                                self.newAngle = self.angle*0.75
 
-                elif (abs(self.rect.right - paddleRect.left) < margin):
-                    # check direction of the ball
-                    if self.speedx > 0:
-                        self.speedx *= -1
-                    else:  # if same direction as the paddle don't reverse direction but increase speed
-                        self.speedx -= 3
+                            else:  # reduce angle by 30%
+                                self.newAngle = self.angle*0.70
+
+                        self.speedx = - \
+                            (math.cos(math.radians(self.newAngle)) * velocity)
+                        self.speedy = - \
+                            (math.sin(math.radians(self.newAngle)) * velocity)
+
+                    # MIDDLE LEFT PART
+                    elif self.rect.right >= paddleRect.x + (0.2 * paddleWidth) and self.rect.left < paddleRect.x + (0.4 * paddleWidth):
+
+                        if self.directionH == 1:  # from the left
+                            # increase angle by 20%
+                            if self.angle < 30:
+                                self.newAngle = self.angle*1.2
+
+                            elif self.angle > 60:  # increase angle by 10%
+                                self.newAngle = self.angle*1.1
+
+                            else:  # increase angle by 15%
+                                self.newAngle = self.angle*1.15
+
+                        else:  # from the right
+                            # reduce angle by 20%
+                            if self.angle < 30:
+                                self.newAngle = self.angle*0.8
+
+                            elif self.angle > 60:  # reduce angle by 10%
+                                self.newAngle = self.angle*0.9
+
+                            else:  # reduce angle by 15%
+                                self.newAngle = self.angle*0.85
+
+                        self.speedx = - \
+                            (math.cos(math.radians(self.newAngle)) * velocity)
+                        self.speedy = - \
+                            (math.sin(math.radians(self.newAngle)) * velocity)
+
+                    elif self.rect.right >= paddleRect.x + (0.4 * paddleWidth) and self.rect.left < paddleRect.x + (0.6 * paddleWidth):
+                        # angle is not changed
+                        self.speedy *= -1
+
+                    # MIDLE RIGHT PART
+                    elif self.rect.right >= paddleRect.x + (0.6 * paddleWidth) and self.rect.left < paddleRect.x + (0.8 * paddleWidth):
+
+                        if self.directionH == 1:  # from the left
+                            # reduce angle by 20%
+                            if self.angle < 30:
+                                self.newAngle = self.angle*0.8
+
+                            elif self.angle > 60:  # reduce angle by 10%
+                                self.newAngle = self.angle*0.9
+
+                            else:  # send the ball in opposite direction
+                                # reduce angle by 15%
+                                self.newAngle = self.angle*0.85
+
+                        else:  # from the right
+                            if self.angle < 30:
+                                # increase angle by 20%
+                                self.newAngle = self.angle*1.2
+
+                            elif self.angle > 60:  # increase angle by 10%
+                                self.newAngle = self.angle*1.1
+
+                            else:  # increase angle by 15%
+                                self.newAngle = self.angle*1.15
+
+                        self.speedx = \
+                            (math.cos(math.radians(self.newAngle)) * velocity)
+                        self.speedy = - \
+                            (math.sin(math.radians(self.newAngle)) * velocity)
+
+                    # RIGHT PART
+                    elif self.rect.right >= paddleRect.x + (0.8 * paddleWidth) and self.rect.left < paddleRect.x + paddleWidth:
+                        if self.directionH == 1:  # from the left
+                            # reduce angle by 35%
+                            if self.angle < 30:
+                                self.newAngle = self.angle*0.65
+
+                            elif self.angle > 60:  # reduce angle by 25%
+                                self.newAngle = self.angle*0.75
+
+                            else:  # send the ball in opposite direction
+                                # reduce angle by 30%
+                                self.newAngle = self.angle*0.70
+
+                        else:  # from the right
+                            if self.angle < 30:
+                                # increase angle by 35%
+                                self.newAngle = self.angle*1.35
+
+                            elif self.angle > 60:  # increase angle by 25%
+                                self.newAngle = self.angle*1.25
+
+                            else:  # increase angle by 30%
+                                self.newAngle = self.angle*1.30
+
+                        self.speedx = \
+                            (math.cos(math.radians(self.newAngle)) * velocity)
+                        self.speedy = - \
+                            (math.sin(math.radians(self.newAngle)) * velocity)
+
+                # SIDES COLLISIONS
+                else:  # collision with side
+                    if (abs(self.rect.left - paddleRect.right) < margin):
+                        # check direction of the ball
+                        if self.speedx < 0:
+                            self.speedx *= -1
+                        else:  # if same direction as the paddle don't reverse direction but increase speed
+                            self.speedx += 3
+
+                    elif (abs(self.rect.right - paddleRect.left) < margin):
+                        # check direction of the ball
+                        if self.speedx > 0:
+                            self.speedx *= -1
+                        else:  # if same direction as the paddle don't reverse direction but increase speed
+                            self.speedx -= 3
 
         #-- End Check for collisions between ball and paddle --#
 
         #-- Check for collisions between ball and Bricks --#
-
-        else:
+        elif self.rect.y > 0 and self.rect.y < height // 2:
             for brick in wallBricks:
                 if(self.rect.colliderect(brick[3])):
                     # check if collision is on top or at bottom of the brick
