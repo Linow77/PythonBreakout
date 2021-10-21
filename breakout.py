@@ -382,8 +382,10 @@ class ball():
         #-- End Check for collisions between ball and Bricks --#
 
     def gravity(self):
-        if (self.speedy > 0 and self.speedy < 1):  # stuck horizontally
+        if (self.speedy >= 0 and self.speedy < 1):  # stuck horizontally
             self.speedy = 1
+        elif (self.speedy < 0 and self.speedy > -1):  # stuck horizontally
+            self.speedy = -1
 
 
 # -- Execution -- #
