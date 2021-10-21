@@ -71,17 +71,17 @@ class wall():
                              ((brick[0]*self.brickWidth + border), (brick[1]*self.brickHeight + border), self.brickWidth - 2*border, self.brickHeight - 2*border))
 
 
-class tray():
+class paddle():
     def __init__(self):
-        self.trayWidth = width / cols
-        self.trayHeight = 20
-        self.x = (width - self.trayWidth)/2
+        self.paddleWidth = width / cols
+        self.paddleHeight = 20
+        self.x = (width - self.paddleWidth)/2
         self.y = height - 40
         self.rect = pygame.Rect(
-            self.x, self.y, self.trayWidth, self.trayHeight)
+            self.x, self.y, self.paddleWidth, self.paddleHeight)
         self.speed = 5
 
-    def printTray(self):
+    def printpaddle(self):
         pygame.draw.rect(screen, BrickColor, self.rect)
 
     def move(self):
@@ -99,15 +99,15 @@ class tray():
 
 bricksWall = wall()
 bricksWall.createBricks()
-playerTray = tray()
+playerpaddle = paddle()
 print(bricksWall.bricks)
 
 while running:
     clock.tick(fps)
     screen.fill(bgColor)
     bricksWall.printWall()
-    playerTray.printTray()
-    playerTray.move()
+    playerpaddle.printpaddle()
+    playerpaddle.move()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
