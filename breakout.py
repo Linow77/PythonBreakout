@@ -3,10 +3,11 @@ import random as r
 import math
 pygame.init()
 
+
 # -- Variables Declaration -- #
 # screen size
 width = 640
-height = 500
+height = 600
 screen = pygame.display.set_mode((width, height))
 
 # title
@@ -68,7 +69,7 @@ gameover = 0
 class wall():
     def __init__(self):
         self.width = width
-        self.height = height // 2
+        self.height = (height - 100) // 2
         self.brickWidth = brickWidth
         self.brickHeight = self.height // rows
         self.bricks = []
@@ -81,7 +82,7 @@ class wall():
             for col in range(cols):
 
                 brick = pygame.Rect(
-                    colNumber*self.brickWidth, rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
+                    colNumber*self.brickWidth, 100+rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
                 # store brick
                 # 25% unbreakable bricks
                 self.bricks.append(
@@ -361,7 +362,7 @@ class ball():
         #-- End Check for collisions between ball and paddle --#
 
         #-- Check for collisions between ball and Bricks --#
-        elif self.rect.y > 0 and self.rect.y < height // 2:
+        elif self.rect.y > 0 and self.rect.y < (height // 2) + 100:
             for brick in wallBricks:
                 if(self.rect.colliderect(brick[3])):
                     # check if collision is on top or at bottom of the brick
@@ -418,10 +419,10 @@ while running:
     if gameRunning == 0:
         # print message to start the game
         screen.blit(
-            startText, ((width - startTextSize[0])//2, (height + 60) // 2))
+            startText, ((width - startTextSize[0])//2, (height + 160) // 2))
     elif gameover:
         screen.blit(
-            gameOverText, ((width - gameOverTextSize[0])//2, (height + 60) // 2))
+            gameOverText, ((width - gameOverTextSize[0])//2, (height + 160) // 2))
     else:
 
         # move ball and paddle
