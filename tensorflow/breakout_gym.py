@@ -4,7 +4,20 @@ from gym.spaces.box import Box
 import pygame
 import random as r
 import math
+import numpy as np
 
+import tensorflow as tf
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+from tf_agents.environments import utils
+
+from tf_agents.environments import tf_py_environment
+
+from rl.agents import DQNAgent
+from rl.policy import BoltzmannQPolicy
+from rl.memory import SequentialMemory
 
 # -- Variables Declaration -- #
 # screen size
@@ -56,14 +69,8 @@ gameOverTextSize = myfont.size("Game Over")
 gameOverText = myfont.render("Game Over", True, color1)
 
 # game launched ?
-gameRunning = 0
-gameover = 0
-
-
-class Environment:
-    def __init__(self, game):
-        self.game = game
-
+gameRunning = 1
+gameOver = 0
 
 class wall():
     def __init__(self):
@@ -144,6 +151,7 @@ class ball():
         self.angle = -1
         self.newAngle = -1
         self.ballSpeed = ballSpeed
+        self.lastCollision = ""
 
     def printBall(self):
         pygame.draw.circle(screen, color3, (self.rect.x +
@@ -152,6 +160,9 @@ class ball():
     def move(self, paddleRect, wallBricks):
         global balls
         global gameRunning
+
+        #reset lastCollision
+        self.lastCollision = ""
 
         # Add speed every tick to the ball's coordinates
         self.x += self.speedx
@@ -165,15 +176,21 @@ class ball():
         # left and right borders
         if self.rect.right > width or self.rect.left < 0:
             self.speedx *= -1
+            #save collision for reward
+            self.lastCollision = "sideBorder"
 
         # top border
         elif self.rect.top < 0:
             self.speedy *= -1
+            #save collision for reward
+            self.lastCollision = "topBorder"
 
         # bottom border
         elif self.rect.bottom > height:
-            # reset ball position
+            #save collision for reward
+            self.lastCollision = "endBorder"
 
+            # reset ball position
             self.x = width // 2 - self.rad
             self.y = ballPositionY
             self.rect.x = self.x
@@ -186,13 +203,14 @@ class ball():
 
             # get a new ball if availabe
             if balls > 0:
+                print("ball lost")
                 gameRunning = 0
                 # delete a ball
                 balls -= 1
 
             else:  # no ball left
-                global gameover
-                gameover = 1
+                global gameOver
+                gameOver = 1
 
         #-- End Check for screen borders --#
 
@@ -203,6 +221,9 @@ class ball():
                 # TOP COLLISION
                 # check if ball is on top of the trail (between the 5px margin)
                 if(abs(self.rect.bottom - paddlePositionY) < margin and self.speedy > 0):
+
+                    #save collision for reward
+                    self.lastCollision = "top"
 
                     # calculate angle between the ball's path and the trail
                     if self.speedx == 0:
@@ -345,6 +366,8 @@ class ball():
 
                 # SIDES COLLISIONS
                 else:  # collision with side
+                    #save collision for reward
+                    self.lastCollision = "side"
                     if (abs(self.rect.left - paddleRect.right) < margin):
                         # check direction of the ball
                         if self.speedx < 0:
@@ -391,38 +414,85 @@ class ball():
 
 class BreakoutEnv(gym.Env):
     def __init__(self, env_config={}):
-        # self.parse_env_config(env_config)
-        self.width = width
-        self.screen = None
-        self.action_space = Discrete(2)
-        self.observation_space = Box(0, 255, [600, 640, 3])
-
-        self.env = Environment(self)
+        global gameOver
+        #init object
         self.wall = wall()
         self.paddle = paddle()
         self.ball = ball(ballSpeed)
-        self.spectator = None
+        #Set screen variable for pygame
+        self.screen = None
+        self.width = width
+        #Actions, go left, right or stand still
+        self.action_space = Discrete(3)
+        #Observations about the position of the paddle and the ball on axis X
+        self.observation_space = Box(low=np.array([0]), high=np.array([self.width]))
+        #Set start position of the paddle and the ball
+        self.state = self.paddle.rect.x
+        self.ball_position = self.ball.x
+        global gameOver
+        self.gameOver = gameOver
 
         self.reset()
         # exit()
 
+    def step(self, action):
+        # Apply action
+        if(action == 0) : #left
+            self.paddle.rect.x -= self.paddle.speed
+            self.state = self.paddle.rect.x
+        elif action == 1 : #stand still
+            pass
+        else : # right
+            self.paddle.rect.x += self.paddle.speed
+            self.state = self.paddle.rect.x
+
+        #calculate reward
+        #reward for touching ball
+        '''if(self.ball.lastCollision != ""):
+            print("nouvelle colision:"+self.ball.lastCollision)
+
+        if(self.ball.lastCollision == "top"):
+            reward = 1
+        elif (self.ball.lastCollision == "endBorder"):
+            reward = -1
+        else : #touch walls
+            reward = 0'''
+        
+        #reward for beiing at same position of the ball
+        if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddle.paddleWidth)):
+            reward = 1
+
+        else : 
+            reward = -1
+            
+        
+        # Check if game is done
+        
+        if gameOver == 1: 
+            done = True
+        else:
+            done = False
+        
+        # Set placeholder for info
+        info = {}
+        
+        # Return step information
+        return self.state, reward, done, info
+
     def reset(self):
         # reset the environment to initial state
+        self.state = self.paddle.rect.x
+        self.ball_position = self.ball.rect.x
+        global balls
+        balls =2
+        global gameOver
+        gameOver = 0
         print("reset")
 
-        return "observation"
-
-    def step(self, action):
-        # perform one step in the game logic
-        if action == 1:
-            self.paddle.rect.x += self.paddle.speed
-        elif action == -1:
-            self.paddle.rect.x -= self.paddle.speed
-
-        return "observation, reward, done, info"
+        return self.state
 
     def render(self):
-
+        
         # done only once
         def init_pygame(self):
             pygame.init()
@@ -432,6 +502,7 @@ class BreakoutEnv(gym.Env):
             self.wall.createBricks()
 
         def render(self):
+            env.ball.move(env.paddle.rect, env.wall.bricks)
             # render wall
             self.wall.printWall()
             # render paddle
@@ -446,3 +517,66 @@ class BreakoutEnv(gym.Env):
         # print background
         self.screen.fill(color4)
         render(self)
+        pygame.display.update()  # update window
+
+env = BreakoutEnv()
+
+#print(env.observation_space.sample())
+print("validate environement")
+utils.validate_py_environment(env, episodes=5)
+
+'''
+
+states = env.observation_space.shape
+actions = env.action_space.n
+print("observations: "+str(states))
+print("actions: "+str(actions))
+
+episodes = 10
+
+for episode in range(1, episodes+1):
+    state = env.reset()
+    done = False
+    score = 0
+    clock = pygame.time.Clock() 
+    
+    while not done:
+
+        clock.tick(60)
+        action = env.action_space.sample()
+        n_state, reward, done, info = env.step(action)
+        score+=reward
+        env.render()
+        
+    print('Episode:{} Score:{}'.format(episode, score))
+
+'''
+'''
+def build_model(states, actions):
+    model = Sequential()   
+    model.add(Dense(24, activation='relu', input_shape=states))
+    model.add(Dense(24, activation='relu'))
+    model.add(Dense(actions, activation='linear'))
+    return model
+
+
+model = build_model(states, actions)
+model.summary()
+print(model.output_shape)
+
+
+def build_agent(model, actions):
+    policy = BoltzmannQPolicy()
+    memory = SequentialMemory(limit=10000, window_length=1)
+    dqn = DQNAgent(model=model, memory=memory, policy=policy, 
+                  nb_actions=actions, nb_steps_warmup=100, target_model_update=1e-2)
+    return dqn
+
+dqn = build_agent(model, actions)
+dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+dqn.fit(env, nb_steps=10000, visualize=False, verbose=1)
+
+
+scores = dqn.test(env, nb_episodes=10, visualize=False)
+print(np.mean(scores.history['episodes reward']))
+'''
