@@ -2,8 +2,9 @@ import pygame
 from breakout_gym import BreakoutEnv2
 import numpy as np
 
-from tf_agents.environments import wrappers
+from tf_agents.environments import tf_environment, wrappers
 from tf_agents.environments import tf_py_environment
+from tf_agents.environments import utils
 import tensorflow as tf
 
 # limit the clock
@@ -15,7 +16,6 @@ running = True
 
 
 # ─── FUNCTIONS FOR USER INPUT ──────── #
-
 
 def key_to_action(key, paddle, width):
     # move left
@@ -43,11 +43,18 @@ def choose_action(paddle, ball):
 clock = pygame.time.Clock()
 env = BreakoutEnv2()
 print('Action Spec:', env.action_spec())
+#check if python environement is correct
+#utils.validate_py_environment(env, episodes=5)
 
 discrete_action_env = wrappers.ActionDiscretizeWrapper(env, num_actions=3)
 print('Discretized Action Spec:', discrete_action_env.action_spec())
 
 tf_env = tf_py_environment.TFPyEnvironment(env)
+
+print(isinstance(tf_env, tf_environment.TFEnvironment))
+print("TimeStep Specs:", tf_env.time_step_spec())
+print("Action Specs:", tf_env.action_spec())
+
 # reset() creates the initial time_step after resetting the environment.
 time_step = tf_env.reset()
 num_steps = 100
@@ -72,12 +79,21 @@ for i in range(num_steps):
     clock.tick(fps)
 
     #tensorflow environement    
-    action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
-    #transitions.append([time_step, action, next_time_step])
+    # action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
+    a = np.random.randint(0,3)
+    print(a)
+    action = tf.constant(i%3)
     print(action)
-    time_step = tf_env.step(action)
-    #print(time_step)
+    time_step = env.step(a)
+    # print(time_step)
     reward += time_step.reward
+
+    #tensor v2
+    # action = tf.constant([i%3])
+    # next_time_step = tf_env.step(action)
+    # transitions.append([time_step, action, next_time_step])
+    # reward += next_time_step.reward
+    # time_step = next_time_step
     
 
     #python environement
@@ -101,5 +117,6 @@ for i in range(num_steps):
 
     env.render()  # make pygame render calls to window
     pygame.display.update()  # update window
+
 
 pygame.quit()
