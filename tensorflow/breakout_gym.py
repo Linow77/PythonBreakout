@@ -521,17 +521,12 @@ class BreakoutEnv(gym.Env):
 
 env = BreakoutEnv()
 
-#print(env.observation_space.sample())
-print("validate environement")
-utils.validate_py_environment(env, episodes=5)
-
-'''
-
 states = env.observation_space.shape
 actions = env.action_space.n
 print("observations: "+str(states))
 print("actions: "+str(actions))
 
+'''
 episodes = 10
 
 for episode in range(1, episodes+1):
