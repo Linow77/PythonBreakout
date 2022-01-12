@@ -448,15 +448,15 @@ class BreakoutEnv(gym.Env):
 
         #calculate reward
         #reward for touching ball
-        '''if(self.ball.lastCollision != ""):
-            print("nouvelle colision:"+self.ball.lastCollision)
+        # if(self.ball.lastCollision != ""):
+        #     print("nouvelle colision:"+self.ball.lastCollision)
 
-        if(self.ball.lastCollision == "top"):
-            reward = 1
-        elif (self.ball.lastCollision == "endBorder"):
-            reward = -1
-        else : #touch walls
-            reward = 0'''
+        # if(self.ball.lastCollision == "top"):
+        #     reward = 10
+        # elif (self.ball.lastCollision == "endBorder"):
+        #     reward = -10
+        # else : #touch walls
+        #     reward = 0
         
         #reward for beiing at same position of the ball
         if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddle.paddleWidth)):
@@ -526,7 +526,7 @@ actions = env.action_space.n
 print("observations: "+str(states))
 print("actions: "+str(actions))
 
-'''
+#Exemple with randoms actions
 episodes = 10
 
 for episode in range(1, episodes+1):
@@ -545,7 +545,7 @@ for episode in range(1, episodes+1):
         
     print('Episode:{} Score:{}'.format(episode, score))
 
-'''
+#Build tf model
 '''
 def build_model(states, actions):
     model = Sequential()   
