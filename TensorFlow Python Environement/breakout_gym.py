@@ -6,6 +6,7 @@ import pygame
 import random as r
 import math
 import numpy as np
+from pygame import time
 import tensorflow as tf
 from tf_agents.environments import tf_environment, wrappers
 from tf_agents.environments import tf_py_environment
@@ -24,6 +25,8 @@ from tf_agents.trajectories import time_step as ts
 from rl.agents import DQNAgent
 from rl.policy import BoltzmannQPolicy
 from rl.memory import SequentialMemory
+
+tf.compat.v1.enable_eager_execution()
 
 # -- Variables Declaration -- #
 # limit the clock
@@ -135,6 +138,7 @@ class paddle():
 
     def printPaddle(self):
         pygame.draw.rect(screen, color3, self.rect)
+        
 
     def move(self):
         # get key pressed
@@ -166,6 +170,7 @@ class ball():
     def printBall(self):
         pygame.draw.circle(screen, color3, (self.rect.x +
                                             self.rad, self.rect.y + self.rad), self.rad)
+        
 
     def move(self, paddleRect, wallBricks):
         global balls
@@ -221,6 +226,7 @@ class ball():
             else:  # no ball left
                 global gameOver
                 gameOver = 1
+                print("gameover")
 
         #-- End Check for screen borders --#
 
@@ -424,6 +430,7 @@ class ball():
 class BreakoutEnv2(py_environment.PyEnvironment):
 
   def __init__(self):
+    print("coucou")
     global gameOver
     #init object
     self.wall = wall()
@@ -446,8 +453,6 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
 
-    
-
   def action_spec(self):
     return self._action_spec
 
@@ -455,11 +460,18 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     return self._observation_spec
 
   def _reset(self): #a faire
+    print("reset")
     self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
+    global gameOver
+    gameOver = 0
+    global balls
+    balls = 2
     return ts.restart(np.array([self._state], dtype=np.int32))
 
   def _step(self, action):
+    env.ball.move(env.paddle.rect, env.wall.bricks)
+    # print("step")
 
     if self._episode_ended:
       # The last action ended the episode. Ignore the current action and start
@@ -482,25 +494,29 @@ class BreakoutEnv2(py_environment.PyEnvironment):
             self.paddle.rect.x += self.paddle.speed
         self.state = self.paddle.rect.x     
     
-    # Check if game is done
-    if gameOver == 1: 
-        self._episode_ended = True
-    else:
-        self._episode_ended = False
+    
 
     #reward for beiing at same position of the ball
     if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddle.paddleWidth)):
         reward = 1
     else : 
         reward = -1
-    return ts.transition(np.array([self._state], dtype=np.int32), reward)
+
+    env.render()
+
+    # Check if game is done
+    if gameOver == 1: 
+        self._episode_ended = True
+        return ts.termination(np.array([self._state], dtype=np.int32), reward)
+    else:
+        self._episode_ended = False
+        return ts.transition(np.array([self._state], dtype=np.int32), reward)
 
   def render(self):  
     # done only once
     def init_pygame(self):
         pygame.init()
         self.screen = pygame.display.set_mode((width, height))
-        print("render")
         # create bricks walls
         self.wall.createBricks()
 
@@ -526,115 +542,132 @@ clock = pygame.time.Clock()
 env = BreakoutEnv2()
 print('Action Spec:', env.action_spec())
 #check if python environement is correct
-#utils.validate_py_environment(env, episodes=5)
+print("validate python environment")
+# utils.validate_py_environment(env, episodes=5)
 
-discrete_action_env = wrappers.ActionDiscretizeWrapper(env, num_actions=3)
-print('Discretized Action Spec:', discrete_action_env.action_spec())
+# discrete_action_env = wrappers.ActionDiscretizeWrapper(env, num_actions=3)
+# print('Discretized Action Spec:', discrete_action_env.action_spec())
 
 tf_env = tf_py_environment.TFPyEnvironment(env)
 
-print(isinstance(tf_env, tf_environment.TFEnvironment))
-print("TimeStep Specs:", tf_env.time_step_spec())
-print("Action Specs:", tf_env.action_spec())
+# print(isinstance(tf_env, tf_environment.TFEnvironment))
+# print("TimeStep Specs:", tf_env.time_step_spec())
+# print("Action Specs:", tf_env.action_spec())
 
 # reset() creates the initial time_step after resetting the environment.
-time_step = tf_env.reset()
-num_steps = 100
-transitions = []
+
+num_steps = 1000
 reward = 0
 
-time_step = env.reset()
-print(time_step)
-cumulative_reward = time_step.reward
 
-print(env.gameOver)
-breakout_action = np.array(0, dtype=np.int32)
+#Python Environnement
+# time_step = env.reset()
+# for i in range(num_steps):
+#     # limit clock
+#     clock.tick(fps)
 
-'''
-#while env.gameOver != 1:
+#     #python environnement
+#     action = np.random.randint(0,3)
+#     time_step = env.step(action)
+#     reward += time_step.reward
+
+# pygame.quit()
+# print("reward:",reward)
+
+# TensorFlow Environnement
+time_step = tf_env.reset()
+print("test")
 for i in range(num_steps):
-
-    #print(env.gameOver)
-    #print(env.gameRunning)
-
     # limit clock
     clock.tick(fps)
 
-    #tensorflow environement    
-    # action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
-    a = np.random.randint(0,3)
-    print(a)
-    action = tf.constant(i%3)
-    print(action)
-    time_step = env.step(a)
-    # print(time_step)
-    reward += time_step.reward
-
-    #tensor v2
+    #tensorFlow environnement
     # action = tf.constant([i%3])
-    # next_time_step = tf_env.step(action)
-    # transitions.append([time_step, action, next_time_step])
-    # reward += next_time_step.reward
-    # time_step = next_time_step
-    
-
-    #python environement
-    #time_step = env.step(breakout_action)
-    #print(time_step)
-    #cumulative_reward += time_step.reward
-    
-
-    # get quit event
-    get_event = pygame.event.get()
-    for event in get_event:
-        if event.type == pygame.QUIT:
-            env.gameOver = 1
-
-    #action = choose_action(env.paddle, env.ball)
-    #action = env.action_space.sample()
-    #reward, done, info = env.step(action)
-
-    # move the ball
-    env.ball.move(env.paddle.rect, env.wall.bricks)
-
-    env.render()  # make pygame render calls to window
-    pygame.display.update()  # update window
+    action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
+    time_step = tf_env.step(action)
+    reward += time_step.reward
 
 
 pygame.quit()
 
-'''
+print( tf.executing_eagerly())
+print("reward:",reward.numpy())
 
-states = tf_env.action_spec()
-actions = tf_env.action_spec()
-print("observations: "+str(states))
-print("actions: "+str(actions))
+#TEST **************************************
+# for i in range(num_steps):
+#     # limit clock
+#     clock.tick(fps)
 
-def build_model(states, actions):
-    model = Sequential()   
-    model.add(Dense(24, activation='relu', input_shape=states))
-    model.add(Dense(24, activation='relu'))
-    model.add(Dense(actions, activation='linear'))
-    return model
+#     #tensorflow environement    
+#     #action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
+#     #a = np.random.randint(0,3)
+#     #print(a)
+#     action = tf.constant([i%3])
+#     print(action)
+#     time_step = tf_env.step(action)
+#     # print(time_step)
+#     reward += time_step.reward
+
+#     #tensor v2
+#     # action = tf.constant([i%3])
+#     # next_time_step = tf_env.step(action)
+#     # transitions.append([time_step, action, next_time_step])
+#     # reward += next_time_step.reward
+#     # time_step = next_time_step
+    
+
+#     #python environement
+#     #time_step = env.step(breakout_action)
+#     #print(time_step)
+#     #cumulative_reward += time_step.reward
+    
+
+#     # get quit event
+#     get_event = pygame.event.get()
+#     for event in get_event:
+#         if event.type == pygame.QUIT:
+#             env.gameOver = 1
+
+#     # move the ball
+#     env.ball.move(env.paddle.rect, env.wall.bricks)
+
+#     env.render()  # make pygame render calls to window
+#     pygame.display.update()  # update window
+
+# pygame.quit()
+# print(reward)
 
 
-model = build_model(states, actions)
-model.summary()
-print(model.output_shape)
-'''
-
-def build_agent(model, actions):
-    policy = BoltzmannQPolicy()
-    memory = SequentialMemory(limit=10000, window_length=1)
-    dqn = DQNAgent(model=model, memory=memory, policy=policy, 
-                  nb_actions=actions, nb_steps_warmup=100, target_model_update=1e-2)
-    return dqn
-
-dqn = build_agent(model, actions)
-dqn.compile(Adam(lr=1e-3), metrics=['mae'])
-dqn.fit(env, nb_steps=10000, visualize=False, verbose=1)
+# states = tf_env.observation_spec()
+# actions = tf_env.action_spec()
+# print("observations: "+str(states))
+# print("actions: "+str(actions))
 
 
-scores = dqn.test(env, nb_episodes=10, visualize=False)
-print(np.mean(scores.history['episodes reward']))
-'''
+# def build_model(states, actions):
+#     model = Sequential()   
+#     model.add(Dense(24, activation='relu', input_shape=states))
+#     model.add(Dense(24, activation='relu'))
+#     model.add(Dense(actions, activation='linear'))
+#     return model
+
+
+# model = build_model(states, actions)
+# model.summary()
+# print(model.output_shape)
+
+
+# def build_agent(model, actions):
+#     policy = BoltzmannQPolicy()
+#     memory = SequentialMemory(limit=10000, window_length=1)
+#     dqn = DQNAgent(model=model, memory=memory, policy=policy, 
+#                   nb_actions=actions, nb_steps_warmup=100, target_model_update=1e-2)
+#     return dqn
+
+# dqn = build_agent(model, actions)
+# dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+# dqn.fit(env, nb_steps=10000, visualize=False, verbose=1)
+
+
+# scores = dqn.test(env, nb_episodes=10, visualize=False)
+# print(np.mean(scores.history['episodes reward']))

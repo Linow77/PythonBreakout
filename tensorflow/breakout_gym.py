@@ -19,6 +19,9 @@ from rl.agents import DQNAgent
 from rl.policy import BoltzmannQPolicy
 from rl.memory import SequentialMemory
 
+from tf_agents.environments import tf_environment, wrappers
+
+
 # -- Variables Declaration -- #
 # screen size
 width = 640
@@ -425,7 +428,7 @@ class BreakoutEnv(gym.Env):
         #Actions, go left, right or stand still
         self.action_space = Discrete(3)
         #Observations about the position of the paddle and the ball on axis X
-        self.observation_space = Box(low=np.array([0]), high=np.array([self.width]))
+        self.observation_space = Box(low=np.array([0,0]), high=np.array([self.width,self.width]))
         #Set start position of the paddle and the ball
         self.state = self.paddle.rect.x
         self.ball_position = self.ball.x
@@ -437,14 +440,14 @@ class BreakoutEnv(gym.Env):
 
     def step(self, action):
         # Apply action
-        if(action == 0) : #left
+        if(action == 0 and self.paddle.rect.left > 0) : #left
             self.paddle.rect.x -= self.paddle.speed
             self.state = self.paddle.rect.x
-        elif action == 1 : #stand still
-            pass
-        else : # right
+        elif action == 2 and self.paddle.rect.right < width: # right
             self.paddle.rect.x += self.paddle.speed
             self.state = self.paddle.rect.x
+        else : #stand still
+            pass
 
         #calculate reward
         #reward for touching ball
@@ -523,6 +526,16 @@ env = BreakoutEnv()
 
 states = env.observation_space.shape
 actions = env.action_space.n
+
+#utils.validate_py_environment(env, episodes=5)
+
+tf_env = tf_py_environment.TFPyEnvironment(env)
+
+print(isinstance(tf_env, tf_environment.TFEnvironment))
+print("TimeStep Specs:", tf_env.time_step_spec())
+print("Action Specs:", tf_env.action_spec())
+
+'''
 print("observations: "+str(states))
 print("actions: "+str(actions))
 
@@ -545,6 +558,7 @@ for episode in range(1, episodes+1):
         
     print('Episode:{} Score:{}'.format(episode, score))
 
+'''
 #Build tf model
 '''
 def build_model(states, actions):
