@@ -27,20 +27,35 @@ from tf_agents.agents.reinforce import reinforce_agent
 # Allow to use tf_random
 tf.compat.v1.enable_eager_execution()
 
-
-
 class wall():
     def __init__(self,instanceEnv):
+        ## Env Variables ##
         self.env = instanceEnv
-        self.brickHeight = self.env.wallHeight // self.env.rows
+
+        ## Wall Variables ##
+        # Same random seed for every creation of wall
+        r.seed(1000)
+        # number of brick per row and per column
+        self.rows = 6
+        self.cols = 5
+        #Sizes
+        self.wallHeight = (self.env.height - 100) // 2
+        self.brickHeight = self.wallHeight // self.rows
+        #Table for storing bricks
         self.bricks = []
+        
+        # border of the bricks (gap between bricks)
+        self.border = 3
+        self.brickWidth = self.env.width // self.cols
 
     def createBricks(self):
-        for rowNumber in range(self.env.rows):
-            for colNumber in range(self.env.cols):
+        for rowNumber in range(self.rows):
+            for colNumber in range(self.cols):
+                # Create Rectancle for each brick
                 brick = pygame.Rect(
-                    colNumber*self.env.brickWidth, 100+rowNumber*self.brickHeight, self.env.brickWidth, self.brickHeight)
-                # store brick
+                    colNumber*self.brickWidth, 100+rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
+                
+                # Store bricks inside table
                 # 25% unbreakable bricks
                 self.bricks.append(
                     (colNumber, rowNumber, r.randint(0, 3), brick))
@@ -56,12 +71,9 @@ class wall():
             else:
                 color = self.env.color2
             
-            # print border bricks
-            pygame.draw.rect(screen, (self.env.color4),
-                             brick[3])
             # print bricks
             pygame.draw.rect(screen, (color),
-                             ((brick[3].x + self.env.border), (brick[3].y + self.env.border), self.env.brickWidth - 2*self.env.border, self.brickHeight - 2*self.env.border))
+                             ((brick[3].x + self.border), (brick[3].y + self.border), self.brickWidth - 2*self.border, self.brickHeight - 2*self.border))
 
 class paddle():
     def __init__(self,instanceEnv):
@@ -151,13 +163,11 @@ class ball():
 
             # get a new ball if availabe
             if self.env.balls > 0:
-                # print("ball lost")
                 # delete a ball
                 self.env.balls -= 1
 
             else:  # no ball left
-                self.env.gameOver = 1
-                # print("gameover")
+                self.env._episode_ended = True
 
         #-- End Check for screen borders --#
 
@@ -358,20 +368,10 @@ class ball():
 
 class BreakoutEnv2(py_environment.PyEnvironment):
   def __init__(self, visualize, fps=10000):
-    ##VARIABLE##
+    ## Init Variables ##
     # screen size
     self.width = 640
-    self.height = 600
-    self.visualize = visualize
-    self.screen = None
-    # BRICK VARIABLES
-    # number of brick
-    self.rows = 6
-    self.cols = 5
-    # border of brick
-    self.border = 3
-    self.brickWidth = self.width // self.cols
-
+    self.height = 600    
 
     # BALL VARIABLES
     # remaining balls
@@ -382,27 +382,19 @@ class BreakoutEnv2(py_environment.PyEnvironment):
 
     # paddle VARIABLES
     self.paddlePositionY = self.height - 60
-    self.paddleWidth = self.brickWidth
+    self.paddleWidth = self.width // 5
 
-    #Wall Variables
-    self.wallHeight = (self.height - 100) // 2
-
-    # margin Error
+    # margin Error for Colisions
     self.margin = 5
+
     
-    #episode over ?
-    self.gameOver = 0
 
-    # Same random seed for every launched
-    r.seed(1000)
-
-    #init object
+    ## Init object ##
     self.wall = wall(self)
     self.paddle = paddle(self)
     self.ball = ball(self)
-    #Set screen variable for pygame
-    self.ball_position = self.ball.x
 
+    ## Definition of actions and observation 
     #three actions : move left, move right or stand still
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(), dtype=np.int32, minimum=0, maximum=2, name='action')
@@ -410,24 +402,26 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     #observation on ball's position and paddle's position
     self._observation_spec = array_spec.BoundedArraySpec(
         shape=(1,2), dtype=np.int32, minimum=0, maximum=self.width, name='observation')
-
+    #observation store inside self._state
     self._state = [self.paddle.rect.x,self.ball.rect.x]
+
+    #Check if episode is ended
     self._episode_ended = False
 
-    ##PYGAME 
+    #Variables for Pygame
+    self.visualize = visualize #activate or not
+    
+
     if(visualize==True):
-        print("true")
+        # Create the screen
+        self.screen = None
+
         # Create the clock
         self.clock = pygame.time.Clock()
         self.fps = fps
 
         # title
         pygame.display.set_caption('Breakout')
-
-        # keep window open
-        self.running = True
-    else:
-        print("false")
 
   def action_spec(self):
     return self._action_spec
@@ -439,18 +433,17 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     # print("reset")
     self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
-    self.gameOver = 0
     self.balls = 2
     return ts.restart(np.array([self._state], dtype=np.int32))
 
   def _step(self, action):
-    self.ball.move(self.paddle.rect, self.wall.bricks)
-    # print("step")
-
+    #Check if last action ended the episode
     if self._episode_ended:
-      # The last action ended the episode. Ignore the current action and start
-      # a new episode.
+      #restart a new episode
       return self.reset()
+
+    #Move the ball
+    self.ball.move(self.paddle.rect, self.wall.bricks)
 
     # Apply action
     if(action == 0 ) : #left
@@ -467,8 +460,6 @@ class BreakoutEnv2(py_environment.PyEnvironment):
         else:
             self.paddle.rect.x += self.paddle.speed
         self.state = self.paddle.rect.x     
-    
-    
 
     #reward for beiing at same position of the ball
     if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddleWidth)):
@@ -482,11 +473,9 @@ class BreakoutEnv2(py_environment.PyEnvironment):
         self.render()
 
     # Check if game is done
-    if self.gameOver == 1: 
-        self._episode_ended = True
+    if self._episode_ended == True: 
         return ts.termination(np.array([self._state], dtype=np.int32), reward)
     else:
-        self._episode_ended = False
         return ts.transition(np.array([self._state], dtype=np.int32), reward)
 
   def render(self):  
