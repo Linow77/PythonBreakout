@@ -1,14 +1,9 @@
 import pygame
-import gym
-from gym.spaces import Discrete
-from gym.spaces.box import Box
-import pygame
 import random as r
 import math
 import numpy as np
-from pygame import time
 import tensorflow as tf
-from tf_agents.environments import tf_environment, wrappers
+from tf_agents.environments import tf_environment
 from tf_agents.environments import tf_py_environment
 from tf_agents.environments import utils
 
@@ -26,84 +21,25 @@ from rl.agents import DQNAgent
 from rl.policy import BoltzmannQPolicy
 from rl.memory import SequentialMemory
 
+from tf_agents.networks import actor_distribution_network
+from tf_agents.agents.reinforce import reinforce_agent
+
+# Allow to use tf_random
 tf.compat.v1.enable_eager_execution()
 
-# -- Variables Declaration -- #
-# limit the clock
-clock = pygame.time.Clock()
-fps = 60
 
-# keep window open
-running = True
-# screen size
-width = 640
-height = 600
-screen = pygame.display.set_mode((width, height))
-
-# title
-pygame.display.set_caption('Breakout')
-
-
-# Colors
-color1 = (36, 32, 56)  # unbreakable bricks
-color2 = (144, 103, 198)  # breakbale bricks
-color3 = (123, 123, 213)  # padd and ball
-color4 = (202, 196, 206)  # background color
-
-# BRICK VARIABLES
-# number of brick
-rows = 6
-cols = 5
-# border of brick
-border = 3
-brickWidth = width // cols
-
-
-# BALL VARIABLES
-# remaining balls
-balls = 2
-ballSpeed = 2.5  # on Axes at the beginning
-velocity = math.sqrt(2*(ballSpeed**2))
-ballPositionY = height - 90
-
-# paddle VARIABLES
-paddlePositionY = height - 60
-paddleWidth = brickWidth
-
-# margin Error
-margin = 5
-# Same random seed for every launched
-r.seed(1000)
-
-# Start Game Text
-pygame.font.init()
-myfont = pygame.font.SysFont('Calibri', 25)
-startTextSize = myfont.size("Press any key to start")
-startText = myfont.render("Press any key to start", True, color2)
-gameOverTextSize = myfont.size("Game Over")
-gameOverText = myfont.render("Game Over", True, color1)
-
-# game launched ?
-gameRunning = 1
-gameOver = 0
 
 class wall():
-    def __init__(self):
-        self.width = width
-        self.height = (height - 100) // 2
-        self.brickWidth = brickWidth
-        self.brickHeight = self.height // rows
+    def __init__(self,instanceEnv):
+        self.env = instanceEnv
+        self.brickHeight = self.env.wallHeight // self.env.rows
         self.bricks = []
 
     def createBricks(self):
-        rowNumber = 0
-        for row in range(rows):
-
-            colNumber = 0
-            for col in range(cols):
-
+        for rowNumber in range(self.env.rows):
+            for colNumber in range(self.env.cols):
                 brick = pygame.Rect(
-                    colNumber*self.brickWidth, 100+rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
+                    colNumber*self.env.brickWidth, 100+rowNumber*self.brickHeight, self.env.brickWidth, self.brickHeight)
                 # store brick
                 # 25% unbreakable bricks
                 self.bricks.append(
@@ -112,33 +48,33 @@ class wall():
                 colNumber += 1
             rowNumber += 1
 
-    def printWall(self):
+    def printWall(self,screen):
         for brick in self.bricks:
             # check for unbreakable bricks
             if(brick[2] == 0):
-                color = color1
+                color = self.env.color1
             else:
-                color = color2
+                color = self.env.color2
+            
             # print border bricks
-            pygame.draw.rect(screen, (color4),
+            pygame.draw.rect(screen, (self.env.color4),
                              brick[3])
             # print bricks
             pygame.draw.rect(screen, (color),
-                             ((brick[3].x + border), (brick[3].y + border), self.brickWidth - 2*border, self.brickHeight - 2*border))
+                             ((brick[3].x + self.env.border), (brick[3].y + self.env.border), self.env.brickWidth - 2*self.env.border, self.brickHeight - 2*self.env.border))
 
 class paddle():
-    def __init__(self):
-        self.paddleWidth = paddleWidth
+    def __init__(self,instanceEnv):
+        self.env = instanceEnv
         self.paddleHeight = 10
-        self.x = (width - self.paddleWidth)/2  # init position
-        self.y = paddlePositionY
+        self.x = (self.env.width - self.env.paddleWidth)/2  # init position
+        self.y = self.env.paddlePositionY
         self.rect = pygame.Rect(
-            self.x, self.y, self.paddleWidth, self.paddleHeight)
+            self.x, self.y, self.env.paddleWidth, self.paddleHeight)
         self.speed = 8
 
-    def printPaddle(self):
-        pygame.draw.rect(screen, color3, self.rect)
-        
+    def printPaddle(self,screen):
+        pygame.draw.rect(screen, self.env.color3, self.rect)     
 
     def move(self):
         # get key pressed
@@ -149,33 +85,30 @@ class paddle():
             self.rect.x -= self.speed
 
         # move right
-        if key[pygame.K_RIGHT] and self.rect.right < width:
+        if key[pygame.K_RIGHT] and self.rect.right < self.env.width:
             self.rect.x += self.speed
 
 class ball():
-    def __init__(self, ballSpeed):
+    def __init__(self,instanceEnv):
+        self.env = instanceEnv
         self.rad = 10
-        self.x = width // 2 - self.rad  # init position of the rectangle
-        self.y = ballPositionY          # init position of the rectangle
-        self.speedx = ballSpeed
-        self.speedy = -ballSpeed
+        self.x = self.env.width // 2 - self.rad  # init position of the rectangle
+        self.y = self.env.ballPositionY          # init position of the rectangle
+        self.speedx = self.env.ballSpeed
+        self.speedy = -self.env.ballSpeed
         self.rect = pygame.Rect(
             self.x, self.y, 2*self.rad, 2*self.rad)
         self.directionH = 1
         self.angle = -1
         self.newAngle = -1
-        self.ballSpeed = ballSpeed
+        self.ballSpeed = self.env.ballSpeed
         self.lastCollision = ""
 
-    def printBall(self):
-        pygame.draw.circle(screen, color3, (self.rect.x +
+    def printBall(self,screen):
+        pygame.draw.circle(screen, self.env.color3, (self.rect.x +
                                             self.rad, self.rect.y + self.rad), self.rad)
         
-
     def move(self, paddleRect, wallBricks):
-        global balls
-        global gameRunning
-
         #reset lastCollision
         self.lastCollision = ""
 
@@ -189,7 +122,7 @@ class ball():
 
         #-- Check for screen borders --#
         # left and right borders
-        if self.rect.right > width or self.rect.left < 0:
+        if self.rect.right > self.env.width or self.rect.left < 0:
             self.speedx *= -1
             #save collision for reward
             self.lastCollision = "sideBorder"
@@ -201,42 +134,40 @@ class ball():
             self.lastCollision = "topBorder"
 
         # bottom border
-        elif self.rect.bottom > height:
+        elif self.rect.bottom > self.env.height:
             #save collision for reward
             self.lastCollision = "endBorder"
 
             # reset ball position
-            self.x = width // 2 - self.rad
-            self.y = ballPositionY
+            self.x = self.env.width // 2 - self.rad
+            self.y = self.env.ballPositionY
             self.rect.x = self.x
             self.rect.y = self.y
             self.speedx = self.ballSpeed
             self.speedy = -self.ballSpeed
 
             # reset paddle position
-            paddleRect.x = (width - paddleWidth)/2  # init position
+            paddleRect.x = (self.env.width - self.env.paddleWidth)/2  # init position
 
             # get a new ball if availabe
-            if balls > 0:
-                print("ball lost")
-                gameRunning = 0
+            if self.env.balls > 0:
+                # print("ball lost")
                 # delete a ball
-                balls -= 1
+                self.env.balls -= 1
 
             else:  # no ball left
-                global gameOver
-                gameOver = 1
-                print("gameover")
+                self.env.gameOver = 1
+                # print("gameover")
 
         #-- End Check for screen borders --#
 
         #-- Check for collisions between ball and paddle --#
-        elif self.rect.y > paddlePositionY - 2*self.rad:
+        elif self.rect.y > self.env.paddlePositionY - 2*self.rad:
             if self.rect.colliderect(paddleRect):
 
                 # TOP COLLISION
                 # check if ball is on top of the trail (between the 5px margin)
-                if(abs(self.rect.bottom - paddlePositionY) < margin and self.speedy > 0):
+                if(abs(self.rect.bottom - self.env.paddlePositionY) < self.env.margin and self.speedy > 0):
 
                     #save collision for reward
                     self.lastCollision = "top"
@@ -256,7 +187,7 @@ class ball():
                     # change x if not on the middle of the paddle
 
                     # LEFT PART
-                    if self.rect.right >= paddleRect.x and self.rect.left < paddleRect.x + (0.2 * paddleWidth):
+                    if self.rect.right >= paddleRect.x and self.rect.left < paddleRect.x + (0.2 * self.env.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # increase angle by 35%
@@ -281,12 +212,12 @@ class ball():
                                 self.newAngle = self.angle*0.70
 
                         self.speedx = - \
-                            (math.cos(math.radians(self.newAngle)) * velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
 
                     # MIDDLE LEFT PART
-                    elif self.rect.right >= paddleRect.x + (0.2 * paddleWidth) and self.rect.left < paddleRect.x + (0.4 * paddleWidth):
+                    elif self.rect.right >= paddleRect.x + (0.2 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.4 * self.env.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # increase angle by 20%
@@ -311,16 +242,16 @@ class ball():
                                 self.newAngle = self.angle*0.85
 
                         self.speedx = - \
-                            (math.cos(math.radians(self.newAngle)) * velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
 
-                    elif self.rect.right >= paddleRect.x + (0.4 * paddleWidth) and self.rect.left < paddleRect.x + (0.6 * paddleWidth):
+                    elif self.rect.right >= paddleRect.x + (0.4 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.6 * self.env.paddleWidth):
                         # angle is not changed
                         self.speedy *= -1
 
                     # MIDLE RIGHT PART
-                    elif self.rect.right >= paddleRect.x + (0.6 * paddleWidth) and self.rect.left < paddleRect.x + (0.8 * paddleWidth):
+                    elif self.rect.right >= paddleRect.x + (0.6 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.8 * self.env.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # reduce angle by 20%
@@ -346,12 +277,12 @@ class ball():
                                 self.newAngle = self.angle*1.15
 
                         self.speedx = \
-                            (math.cos(math.radians(self.newAngle)) * velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
 
                     # RIGHT PART
-                    elif self.rect.right >= paddleRect.x + (0.8 * paddleWidth) and self.rect.left < paddleRect.x + paddleWidth:
+                    elif self.rect.right >= paddleRect.x + (0.8 * self.env.paddleWidth) and self.rect.left < paddleRect.x + self.env.paddleWidth:
                         if self.directionH == 1:  # from the left
                             # reduce angle by 35%
                             if self.angle < 30:
@@ -376,22 +307,22 @@ class ball():
                                 self.newAngle = self.angle*1.30
 
                         self.speedx = \
-                            (math.cos(math.radians(self.newAngle)) * velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
 
                 # SIDES COLLISIONS
                 else:  # collision with side
                     #save collision for reward
                     self.lastCollision = "side"
-                    if (abs(self.rect.left - paddleRect.right) < margin):
+                    if (abs(self.rect.left - paddleRect.right) < self.env.margin):
                         # check direction of the ball
                         if self.speedx < 0:
                             self.speedx *= -1
                         else:  # if same direction as the paddle don't reverse direction but increase speed
                             self.speedx += 3
 
-                    elif (abs(self.rect.right - paddleRect.left) < margin):
+                    elif (abs(self.rect.right - paddleRect.left) < self.env.margin):
                         # check direction of the ball
                         if self.speedx > 0:
                             self.speedx *= -1
@@ -401,25 +332,23 @@ class ball():
         #-- End Check for collisions between ball and paddle --#
 
         #-- Check for collisions between ball and Bricks --#
-        elif self.rect.y > 0 and self.rect.y < (height // 2) + 100:
+        elif self.rect.y > 0 and self.rect.y < (self.env.height // 2) + 100:
             for brick in wallBricks:
                 if(self.rect.colliderect(brick[3])):
                     # check if collision is on top or at bottom of the brick
-                    if ((abs(self.rect.top - brick[3].bottom) < margin and self.speedy < 0) or
-                            (abs(self.rect.bottom - brick[3].top) < margin and self.speedy > 0)):
+                    if ((abs(self.rect.top - brick[3].bottom) < self.env.margin and self.speedy < 0) or
+                            (abs(self.rect.bottom - brick[3].top) < self.env.margin and self.speedy > 0)):
                         # top or bottom
                         self.speedy *= -1
 
-                    elif ((abs(self.rect.left - brick[3].right) < margin and self.speedx < 0) or
-                          (abs(self.rect.right - brick[3].left) < margin and self.speedx > 0)):
+                    elif ((abs(self.rect.left - brick[3].right) < self.env.margin and self.speedx < 0) or
+                          (abs(self.rect.right - brick[3].left) < self.env.margin and self.speedx > 0)):
                         # right or left
                         self.speedx *= -1
 
                     # delete the brick if breakable
                     if(brick[2] != 0):
                         wallBricks.remove(brick)
-
-        #-- End Check for collisions between ball and Bricks --#
 
     def gravity(self):
         if (self.speedy >= 0 and self.speedy < 1):  # stuck horizontally
@@ -428,19 +357,51 @@ class ball():
             self.speedy = -1
 
 class BreakoutEnv2(py_environment.PyEnvironment):
-
-  def __init__(self):
-    print("coucou")
-    global gameOver
-    #init object
-    self.wall = wall()
-    self.paddle = paddle()
-    self.ball = ball(ballSpeed)
-    #Set screen variable for pygame
+  def __init__(self, visualize, fps=10000):
+    ##VARIABLE##
+    # screen size
+    self.width = 640
+    self.height = 600
+    self.visualize = visualize
     self.screen = None
-    self.width = width
+    # BRICK VARIABLES
+    # number of brick
+    self.rows = 6
+    self.cols = 5
+    # border of brick
+    self.border = 3
+    self.brickWidth = self.width // self.cols
+
+
+    # BALL VARIABLES
+    # remaining balls
+    self.balls = 2
+    self.ballSpeed = 2.5  # on Axes at the beginning
+    self.velocity = math.sqrt(2*(self.ballSpeed**2))
+    self.ballPositionY = self.height - 90
+
+    # paddle VARIABLES
+    self.paddlePositionY = self.height - 60
+    self.paddleWidth = self.brickWidth
+
+    #Wall Variables
+    self.wallHeight = (self.height - 100) // 2
+
+    # margin Error
+    self.margin = 5
+    
+    #episode over ?
+    self.gameOver = 0
+
+    # Same random seed for every launched
+    r.seed(1000)
+
+    #init object
+    self.wall = wall(self)
+    self.paddle = paddle(self)
+    self.ball = ball(self)
+    #Set screen variable for pygame
     self.ball_position = self.ball.x
-    self.gameOver = gameOver
 
     #three actions : move left, move right or stand still
     self._action_spec = array_spec.BoundedArraySpec(
@@ -453,6 +414,21 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
 
+    ##PYGAME 
+    if(visualize==True):
+        print("true")
+        # Create the clock
+        self.clock = pygame.time.Clock()
+        self.fps = fps
+
+        # title
+        pygame.display.set_caption('Breakout')
+
+        # keep window open
+        self.running = True
+    else:
+        print("false")
+
   def action_spec(self):
     return self._action_spec
 
@@ -460,17 +436,15 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     return self._observation_spec
 
   def _reset(self): #a faire
-    print("reset")
+    # print("reset")
     self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
-    global gameOver
-    gameOver = 0
-    global balls
-    balls = 2
+    self.gameOver = 0
+    self.balls = 2
     return ts.restart(np.array([self._state], dtype=np.int32))
 
   def _step(self, action):
-    env.ball.move(env.paddle.rect, env.wall.bricks)
+    self.ball.move(self.paddle.rect, self.wall.bricks)
     # print("step")
 
     if self._episode_ended:
@@ -488,8 +462,8 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     elif action == 1 : #stand still
         pass
     else : # right
-        if(self.paddle.rect.x + self.paddle.paddleWidth + self.paddle.speed > width):
-            self.paddle.rect.x = width - self.paddle.paddleWidth
+        if(self.paddle.rect.x + self.paddleWidth + self.paddle.speed > self.width):
+            self.paddle.rect.x = self.width - self.paddleWidth
         else:
             self.paddle.rect.x += self.paddle.speed
         self.state = self.paddle.rect.x     
@@ -497,15 +471,18 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     
 
     #reward for beiing at same position of the ball
-    if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddle.paddleWidth)):
+    if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddleWidth)):
         reward = 1
     else : 
         reward = -1
 
-    env.render()
+    if(self.visualize == True):
+        #limit the clock
+        self.clock.tick(self.fps)
+        self.render()
 
     # Check if game is done
-    if gameOver == 1: 
+    if self.gameOver == 1: 
         self._episode_ended = True
         return ts.termination(np.array([self._state], dtype=np.int32), reward)
     else:
@@ -515,130 +492,115 @@ class BreakoutEnv2(py_environment.PyEnvironment):
   def render(self):  
     # done only once
     def init_pygame(self):
+        # Colors
+        self.color1 = (36, 32, 56)  # unbreakable bricks
+        self.color2 = (144, 103, 198)  # breakable bricks
+        self.color3 = (123, 123, 213)  # padd and ball
+        self.color4 = (202, 196, 206)  # background color
         pygame.init()
-        self.screen = pygame.display.set_mode((width, height))
+        self.screen = pygame.display.set_mode((self.width, self.height))
         # create bricks walls
         self.wall.createBricks()
 
     def render(self):
         # render wall
-        self.wall.printWall()
+        self.wall.printWall(self.screen)
         # render paddle
-        self.paddle.printPaddle()
+        self.paddle.printPaddle(self.screen)
         # render ball
-        self.ball.printBall()
+        self.ball.printBall(self.screen)
 
     # init pygame
     if self.screen is None:
         init_pygame(self)
 
     # print background
-    self.screen.fill(color4)
+    self.screen.fill(self.color4)
     render(self)
     pygame.display.update()  # update window
 
+#-- Create Python Environment --#
+env = BreakoutEnv2(visualize=True) #add fps parameters if needed
+# print('Action Spec:', env.action_spec())
 
-clock = pygame.time.Clock()
-env = BreakoutEnv2()
-print('Action Spec:', env.action_spec())
-#check if python environement is correct
-print("validate python environment")
+# check if python environement is correct
+# print("validate python environment")
 # utils.validate_py_environment(env, episodes=5)
 
-# discrete_action_env = wrappers.ActionDiscretizeWrapper(env, num_actions=3)
-# print('Discretized Action Spec:', discrete_action_env.action_spec())
 
+#-- Convert in Tensor Environment --#
 tf_env = tf_py_environment.TFPyEnvironment(env)
-
 # print(isinstance(tf_env, tf_environment.TFEnvironment))
 # print("TimeStep Specs:", tf_env.time_step_spec())
 # print("Action Specs:", tf_env.action_spec())
 
-# reset() creates the initial time_step after resetting the environment.
-
-num_steps = 1000
+#Variables
+num_episode = 10
 reward = 0
 
-
-#Python Environnement
-# time_step = env.reset()
-# for i in range(num_steps):
-#     # limit clock
-#     clock.tick(fps)
-
-#     #python environnement
-#     action = np.random.randint(0,3)
-#     time_step = env.step(action)
-#     reward += time_step.reward
-
-# pygame.quit()
+#-- Test  with Python Environment pygame --#
+# for i in range(num_episode):
+#     time_step = env.reset()
+#     #while episode not done
+#     while not time_step.is_last():
+#         #tensorFlow environment
+#         action = np.random.randint(0,3)
+#         time_step = env.step(action)
+#         reward += time_step.reward
+#     print("Episode "+str(i+1)+"/"+str(num_episode)+ " done")
 # print("reward:",reward)
 
-# TensorFlow Environnement
-time_step = tf_env.reset()
-print("test")
-for i in range(num_steps):
-    # limit clock
-    clock.tick(fps)
-
-    #tensorFlow environnement
-    # action = tf.constant([i%3])
-    action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
-    time_step = tf_env.step(action)
-    reward += time_step.reward
-
-
-pygame.quit()
-
-print( tf.executing_eagerly())
+#-- Test  with Tensor Environment pygame --#
+for i in range(num_episode):
+    time_step = tf_env.reset()
+    #while episode not done
+    while not time_step.is_last():
+        #tensorFlow environment
+        action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
+        time_step = tf_env.step(action)
+        reward += time_step.reward
+    print("Episode "+str(i+1)+"/"+str(num_episode)+ " done")
 print("reward:",reward.numpy())
 
-#TEST **************************************
-# for i in range(num_steps):
-#     # limit clock
-#     clock.tick(fps)
 
-#     #tensorflow environement    
-#     #action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
-#     #a = np.random.randint(0,3)
-#     #print(a)
-#     action = tf.constant([i%3])
-#     print(action)
-#     time_step = tf_env.step(action)
-#     # print(time_step)
-#     reward += time_step.reward
+#-- Training --#
+# print("-- Training --")
+# fc_layer_params = (100,)
 
-#     #tensor v2
-#     # action = tf.constant([i%3])
-#     # next_time_step = tf_env.step(action)
-#     # transitions.append([time_step, action, next_time_step])
-#     # reward += next_time_step.reward
-#     # time_step = next_time_step
-    
+# learning_rate = 1e-3 # @param {type:"number"}
 
-#     #python environement
-#     #time_step = env.step(breakout_action)
-#     #print(time_step)
-#     #cumulative_reward += time_step.reward
-    
+# train_env = tf_py_environment.TFPyEnvironment(env)
 
+# actor_net = actor_distribution_network.ActorDistributionNetwork(
+#     train_env.observation_spec(),
+#     train_env.action_spec(),
+#     fc_layer_params=fc_layer_params)
+
+
+# optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+
+# train_step_counter = tf.Variable(0)
+
+# tf_agent = reinforce_agent.ReinforceAgent(
+#     train_env.time_step_spec(),
+#     train_env.action_spec(),
+#     actor_network=actor_net,
+#     optimizer=optimizer,
+#     normalize_returns=True,
+#     train_step_counter=train_step_counter)
+# tf_agent.initialize()
+
+
+# permettre la fermeture de la fenetre avec la croix
 #     # get quit event
 #     get_event = pygame.event.get()
 #     for event in get_event:
 #         if event.type == pygame.QUIT:
 #             env.gameOver = 1
 
-#     # move the ball
-#     env.ball.move(env.paddle.rect, env.wall.bricks)
-
-#     env.render()  # make pygame render calls to window
-#     pygame.display.update()  # update window
-
-# pygame.quit()
-# print(reward)
 
 
-# states = tf_env.observation_spec()
+# states = tf_env.time_step_spec()
 # actions = tf_env.action_spec()
 # print("observations: "+str(states))
 # print("actions: "+str(actions))
