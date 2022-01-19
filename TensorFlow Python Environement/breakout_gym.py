@@ -102,18 +102,38 @@ class paddle():
 
 class ball():
     def __init__(self,instanceEnv):
+        ## Env Variables ##
         self.env = instanceEnv
+
+        ## Ball Variables ##
+        # Initial speed of the ball on each axes
+        self.ballSpeed = 2.5  # on Axes at the beginning
+        self.speedx = self.ballSpeed
+        self.speedy = -self.ballSpeed
+
+        # Global Velocity of the ball
+        self.velocity = math.sqrt(2*(self.ballSpeed**2))
+
+        # Radius of the ball
         self.rad = 10
+
+        # Initial position of the ball
         self.x = self.env.width // 2 - self.rad  # init position of the rectangle
-        self.y = self.env.ballPositionY          # init position of the rectangle
-        self.speedx = self.env.ballSpeed
-        self.speedy = -self.env.ballSpeed
+        self.y = self.env.height - 90            # init position of the rectangle
+
+        # Create a rectangle around the ball
         self.rect = pygame.Rect(
             self.x, self.y, 2*self.rad, 2*self.rad)
+
+        #Horizontal Direction (from the left to the right = 1)
         self.directionH = 1
+
+        #Angle of the colision between the ball and the paddle (or the wall)
         self.angle = -1
+        #Angle of the redirection after colision
         self.newAngle = -1
-        self.ballSpeed = self.env.ballSpeed
+
+        #Save the nature of the colision (wall, screen, or paddle)
         self.lastCollision = ""
 
     def printBall(self,screen):
@@ -152,7 +172,7 @@ class ball():
 
             # reset ball position
             self.x = self.env.width // 2 - self.rad
-            self.y = self.env.ballPositionY
+            self.y = self.env.height - 90
             self.rect.x = self.x
             self.rect.y = self.y
             self.speedx = self.ballSpeed
@@ -222,9 +242,9 @@ class ball():
                                 self.newAngle = self.angle*0.70
 
                         self.speedx = - \
-                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                     # MIDDLE LEFT PART
                     elif self.rect.right >= paddleRect.x + (0.2 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.4 * self.env.paddleWidth):
@@ -252,9 +272,9 @@ class ball():
                                 self.newAngle = self.angle*0.85
 
                         self.speedx = - \
-                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                     elif self.rect.right >= paddleRect.x + (0.4 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.6 * self.env.paddleWidth):
                         # angle is not changed
@@ -287,9 +307,9 @@ class ball():
                                 self.newAngle = self.angle*1.15
 
                         self.speedx = \
-                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                     # RIGHT PART
                     elif self.rect.right >= paddleRect.x + (0.8 * self.env.paddleWidth) and self.rect.left < paddleRect.x + self.env.paddleWidth:
@@ -317,9 +337,9 @@ class ball():
                                 self.newAngle = self.angle*1.30
 
                         self.speedx = \
-                            (math.cos(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.cos(math.radians(self.newAngle)) * self.velocity)
                         self.speedy = - \
-                            (math.sin(math.radians(self.newAngle)) * self.env.velocity)
+                            (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                 # SIDES COLLISIONS
                 else:  # collision with side
@@ -371,14 +391,10 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     ## Init Variables ##
     # screen size
     self.width = 640
-    self.height = 600    
+    self.height = 600   
 
-    # BALL VARIABLES
     # remaining balls
-    self.balls = 2
-    self.ballSpeed = 2.5  # on Axes at the beginning
-    self.velocity = math.sqrt(2*(self.ballSpeed**2))
-    self.ballPositionY = self.height - 90
+    self.balls = 2 
 
     # paddle VARIABLES
     self.paddlePositionY = self.height - 60
