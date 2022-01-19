@@ -34,19 +34,25 @@ class wall():
 
         ## Wall Variables ##
         # Same random seed for every creation of wall
-        r.seed(1000)
+        r.seed(1000) #1000
         # number of brick per row and per column
         self.rows = 6
         self.cols = 5
         #Sizes
         self.wallHeight = (self.env.height - 100) // 2
         self.brickHeight = self.wallHeight // self.rows
+
         #Table for storing bricks
         self.bricks = []
+        #Number of breakable bricks
+        self.breakableBricks = 0
         
         # border of the bricks (gap between bricks)
         self.border = 3
         self.brickWidth = self.env.width // self.cols
+
+        #Save of the wall in order to reset the episode
+        self.save = []
 
     def createBricks(self):
         for rowNumber in range(self.rows):
@@ -55,13 +61,22 @@ class wall():
                 brick = pygame.Rect(
                     colNumber*self.brickWidth, 100+rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
                 
-                # Store bricks inside table
                 # 25% unbreakable bricks
+                type = r.randint(0,3)
+                if type != 0:
+                    self.breakableBricks+=1
+
+                # Store bricks inside table
                 self.bricks.append(
-                    (colNumber, rowNumber, r.randint(0, 3), brick))
+                    (colNumber, rowNumber, type, brick))
 
                 colNumber += 1
             rowNumber += 1
+        #Save the wall 
+        self.save = self.bricks.copy()
+
+    def resetBricks(self):
+        self.bricks = self.save.copy()      
 
     def printWall(self,screen):
         for brick in self.bricks:
@@ -77,12 +92,20 @@ class wall():
 
 class paddle():
     def __init__(self,instanceEnv):
+        ## Env Variables ##
         self.env = instanceEnv
+
+        ## Paddle Variables ##
+        # Sizes
+        self.paddleWidth = self.env.width // 5
         self.paddleHeight = 10
-        self.x = (self.env.width - self.env.paddleWidth)/2  # init position
-        self.y = self.env.paddlePositionY
+        # Initial Position
+        self.x = (self.env.width - self.paddleWidth)/2  
+        self.y = self.env.height - 60
+        #Create teh rectangle of the paddle
         self.rect = pygame.Rect(
-            self.x, self.y, self.env.paddleWidth, self.paddleHeight)
+            self.x, self.y, self.paddleWidth, self.paddleHeight)
+        #Speed of the paddle
         self.speed = 8
 
     def printPaddle(self,screen):
@@ -136,6 +159,9 @@ class ball():
         #Save the nature of the colision (wall, screen, or paddle)
         self.lastCollision = ""
 
+        # margin Error for Colisions
+        self.margin = 5
+
     def printBall(self,screen):
         pygame.draw.circle(screen, self.env.color3, (self.rect.x +
                                             self.rad, self.rect.y + self.rad), self.rad)
@@ -179,7 +205,7 @@ class ball():
             self.speedy = -self.ballSpeed
 
             # reset paddle position
-            paddleRect.x = (self.env.width - self.env.paddleWidth)/2  # init position
+            paddleRect.rect.x = (self.env.width - paddleRect.paddleWidth)/2  # init position
 
             # get a new ball if availabe
             if self.env.balls > 0:
@@ -192,12 +218,12 @@ class ball():
         #-- End Check for screen borders --#
 
         #-- Check for collisions between ball and paddle --#
-        elif self.rect.y > self.env.paddlePositionY - 2*self.rad:
+        elif self.rect.y > paddleRect.rect.y - 2*self.rad:
             if self.rect.colliderect(paddleRect):
 
                 # TOP COLLISION
                 # check if ball is on top of the trail (between the 5px margin)
-                if(abs(self.rect.bottom - self.env.paddlePositionY) < self.env.margin and self.speedy > 0):
+                if(abs(self.rect.bottom - paddleRect.rect.y) < self.margin and self.speedy > 0):
 
                     #save collision for reward
                     self.lastCollision = "top"
@@ -217,7 +243,7 @@ class ball():
                     # change x if not on the middle of the paddle
 
                     # LEFT PART
-                    if self.rect.right >= paddleRect.x and self.rect.left < paddleRect.x + (0.2 * self.env.paddleWidth):
+                    if self.rect.right >= paddleRect.rect.x and self.rect.left < paddleRect.rect.x + (0.2 * paddleRect.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # increase angle by 35%
@@ -247,7 +273,7 @@ class ball():
                             (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                     # MIDDLE LEFT PART
-                    elif self.rect.right >= paddleRect.x + (0.2 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.4 * self.env.paddleWidth):
+                    elif self.rect.right >= paddleRect.rect.x + (0.2 *paddleRect.paddleWidth) and self.rect.left < paddleRect.rect.x + (0.4 *paddleRect.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # increase angle by 20%
@@ -276,12 +302,12 @@ class ball():
                         self.speedy = - \
                             (math.sin(math.radians(self.newAngle)) * self.velocity)
 
-                    elif self.rect.right >= paddleRect.x + (0.4 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.6 * self.env.paddleWidth):
+                    elif self.rect.right >= paddleRect.rect.x + (0.4 * paddleRect.paddleWidth) and self.rect.left < paddleRect.rect.x + (0.6 * paddleRect.paddleWidth):
                         # angle is not changed
                         self.speedy *= -1
 
                     # MIDLE RIGHT PART
-                    elif self.rect.right >= paddleRect.x + (0.6 * self.env.paddleWidth) and self.rect.left < paddleRect.x + (0.8 * self.env.paddleWidth):
+                    elif self.rect.right >= paddleRect.rect.x + (0.6 * paddleRect.paddleWidth) and self.rect.left < paddleRect.rect.x + (0.8 * paddleRect.paddleWidth):
 
                         if self.directionH == 1:  # from the left
                             # reduce angle by 20%
@@ -312,7 +338,7 @@ class ball():
                             (math.sin(math.radians(self.newAngle)) * self.velocity)
 
                     # RIGHT PART
-                    elif self.rect.right >= paddleRect.x + (0.8 * self.env.paddleWidth) and self.rect.left < paddleRect.x + self.env.paddleWidth:
+                    elif self.rect.right >= paddleRect.rect.x + (0.8 * paddleRect.paddleWidth) and self.rect.left < paddleRect.rect.x + paddleRect.paddleWidth:
                         if self.directionH == 1:  # from the left
                             # reduce angle by 35%
                             if self.angle < 30:
@@ -345,14 +371,14 @@ class ball():
                 else:  # collision with side
                     #save collision for reward
                     self.lastCollision = "side"
-                    if (abs(self.rect.left - paddleRect.right) < self.env.margin):
+                    if (abs(self.rect.left - paddleRect.rect.right) < self.margin):
                         # check direction of the ball
                         if self.speedx < 0:
                             self.speedx *= -1
                         else:  # if same direction as the paddle don't reverse direction but increase speed
                             self.speedx += 3
 
-                    elif (abs(self.rect.right - paddleRect.left) < self.env.margin):
+                    elif (abs(self.rect.right - paddleRect.rect.left) < self.margin):
                         # check direction of the ball
                         if self.speedx > 0:
                             self.speedx *= -1
@@ -366,19 +392,21 @@ class ball():
             for brick in wallBricks:
                 if(self.rect.colliderect(brick[3])):
                     # check if collision is on top or at bottom of the brick
-                    if ((abs(self.rect.top - brick[3].bottom) < self.env.margin and self.speedy < 0) or
-                            (abs(self.rect.bottom - brick[3].top) < self.env.margin and self.speedy > 0)):
+                    if ((abs(self.rect.top - brick[3].bottom) < self.margin and self.speedy < 0) or
+                            (abs(self.rect.bottom - brick[3].top) < self.margin and self.speedy > 0)):
                         # top or bottom
                         self.speedy *= -1
 
-                    elif ((abs(self.rect.left - brick[3].right) < self.env.margin and self.speedx < 0) or
-                          (abs(self.rect.right - brick[3].left) < self.env.margin and self.speedx > 0)):
+                    elif ((abs(self.rect.left - brick[3].right) < self.margin and self.speedx < 0) or
+                          (abs(self.rect.right - brick[3].left) < self.margin and self.speedx > 0)):
                         # right or left
                         self.speedx *= -1
 
                     # delete the brick if breakable
                     if(brick[2] != 0):
                         wallBricks.remove(brick)
+                        #add score
+                        self.env.score+=1
 
     def gravity(self):
         if (self.speedy >= 0 and self.speedy < 1):  # stuck horizontally
@@ -396,19 +424,13 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     # remaining balls
     self.balls = 2 
 
-    # paddle VARIABLES
-    self.paddlePositionY = self.height - 60
-    self.paddleWidth = self.width // 5
-
-    # margin Error for Colisions
-    self.margin = 5
-
-    
-
     ## Init object ##
     self.wall = wall(self)
     self.paddle = paddle(self)
     self.ball = ball(self)
+
+    # Score #
+    self.score = 0
 
     ## Definition of actions and observation 
     #three actions : move left, move right or stand still
@@ -425,9 +447,8 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     self._episode_ended = False
 
     #Variables for Pygame
-    self.visualize = visualize #activate or not
-    
-
+    self.visualize = visualize 
+    #Activate the visualisation
     if(visualize==True):
         # Create the screen
         self.screen = None
@@ -446,10 +467,14 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     return self._observation_spec
 
   def _reset(self): #a faire
-    # print("reset")
-    self._state = [self.paddle.rect.x,self.ball.rect.x]
     self._episode_ended = False
+    #Reset wall
+    self.wall.resetBricks()
+    #reset remainig balls
     self.balls = 2
+    #reset score
+    self.score = 0
+
     return ts.restart(np.array([self._state], dtype=np.int32))
 
   def _step(self, action):
@@ -459,7 +484,7 @@ class BreakoutEnv2(py_environment.PyEnvironment):
       return self.reset()
 
     #Move the ball
-    self.ball.move(self.paddle.rect, self.wall.bricks)
+    self.ball.move(self.paddle, self.wall.bricks)
 
     # Apply action
     if(action == 0 ) : #left
@@ -471,14 +496,14 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     elif action == 1 : #stand still
         pass
     else : # right
-        if(self.paddle.rect.x + self.paddleWidth + self.paddle.speed > self.width):
-            self.paddle.rect.x = self.width - self.paddleWidth
+        if(self.paddle.rect.x + self.paddle.paddleWidth + self.paddle.speed > self.width):
+            self.paddle.rect.x = self.width - self.paddle.paddleWidth
         else:
             self.paddle.rect.x += self.paddle.speed
         self.state = self.paddle.rect.x     
 
     #reward for beiing at same position of the ball
-    if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddleWidth)):
+    if(self.ball.rect.x > self.paddle.rect.x and (self.ball.rect.x + self.ball.rad*2) < (self.paddle.rect.x + self.paddle.paddleWidth)):
         reward = 1
     else : 
         reward = -1
@@ -564,7 +589,7 @@ for i in range(num_episode):
         action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
         time_step = tf_env.step(action)
         reward += time_step.reward
-    print("Episode "+str(i+1)+"/"+str(num_episode)+ " done")
+    print("Episode "+str(i+1)+"/"+str(num_episode)+ " done : " + str(env.score) + "/" + str(env.wall.breakableBricks)+" bricks")
 print("reward:",reward.numpy())
 
 
