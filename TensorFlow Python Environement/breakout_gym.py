@@ -414,7 +414,7 @@ class ball():
         elif (self.speedy < 0 and self.speedy > -1):  # stuck horizontally
             self.speedy = -1
 
-class BreakoutEnv2(py_environment.PyEnvironment):
+class BreakoutEnv(py_environment.PyEnvironment):
   def __init__(self, visualize, fps=10000):
     ## Init Variables ##
     # screen size
@@ -550,21 +550,14 @@ class BreakoutEnv2(py_environment.PyEnvironment):
     pygame.display.update()  # update window
 
 #-- Create Python Environment --#
-env = BreakoutEnv2(visualize=True) #add fps parameters if needed
+env = BreakoutEnv(visualize=True) #add fps parameters if needed
 # print('Action Spec:', env.action_spec())
 
 # check if python environement is correct
 # print("validate python environment")
 # utils.validate_py_environment(env, episodes=5)
 
-
-#-- Convert in Tensor Environment --#
-tf_env = tf_py_environment.TFPyEnvironment(env)
-# print(isinstance(tf_env, tf_environment.TFEnvironment))
-# print("TimeStep Specs:", tf_env.time_step_spec())
-# print("Action Specs:", tf_env.action_spec())
-
-#Variables
+#Variables for testing environment
 num_episode = 10
 reward = 0
 
@@ -577,20 +570,32 @@ reward = 0
 #         action = np.random.randint(0,3)
 #         time_step = env.step(action)
 #         reward += time_step.reward
-#     print("Episode "+str(i+1)+"/"+str(num_episode)+ " done")
+#     print("Episode "+str(i+1)+"/"+str(num_episode)+ " done : " + str(env.score) + 
+#     "/" + str(env.wall.breakableBricks)+" bricks")
+
 # print("reward:",reward)
 
+#-- Convert in Tensor Environment --#
+tf_env = tf_py_environment.TFPyEnvironment(env)
+
+# Check if TensorFlow environment is correct
+# print(isinstance(tf_env, tf_environment.TFEnvironment))
+# print("TimeStep Specs:", tf_env.time_step_spec())
+# print("Action Specs:", tf_env.action_spec())
+
 #-- Test  with Tensor Environment pygame --#
-for i in range(num_episode):
-    time_step = tf_env.reset()
-    #while episode not done
-    while not time_step.is_last():
-        #tensorFlow environment
-        action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
-        time_step = tf_env.step(action)
-        reward += time_step.reward
-    print("Episode "+str(i+1)+"/"+str(num_episode)+ " done : " + str(env.score) + "/" + str(env.wall.breakableBricks)+" bricks")
-print("reward:",reward.numpy())
+# for i in range(num_episode):
+#     time_step = tf_env.reset()
+#     #while episode not done
+#     while not time_step.is_last():
+#         #tensorFlow environment
+#         action = tf.random.uniform(shape=[], minval=0, maxval=3, dtype=tf.int32)
+#         time_step = tf_env.step(action)
+#         reward += time_step.reward
+#     print("Episode "+str(i+1)+"/"+str(num_episode)+ " done : " + str(env.score) + 
+#     "/" + str(env.wall.breakableBricks)+" bricks")
+
+# print("reward:",reward.numpy())
 
 
 #-- Training --#
