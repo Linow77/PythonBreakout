@@ -101,7 +101,7 @@ class wall():
 
                 # Store bricks inside table
                 self.bricks.append(
-                    (colNumber, rowNumber, 2, brick))
+                    (colNumber, rowNumber, type, brick))
 
                 colNumber += 1
             rowNumber += 1
