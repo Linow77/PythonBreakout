@@ -31,7 +31,6 @@ cols = 5
 border = 3
 brickWidth = width // cols
 
-
 # BALL VARIABLES
 # remaining balls
 balls = 2
@@ -48,6 +47,12 @@ margin = 5
 # Same random seed for every launched
 r.seed(1000)
 
+#Number of breakable bricks
+breakableBricks = 0
+
+#Number of brick destroyed
+score=0
+
 # keep window open
 running = True
 
@@ -58,35 +63,45 @@ startTextSize = myfont.size("Press any key to start")
 startText = myfont.render("Press any key to start", True, color2)
 gameOverTextSize = myfont.size("Game Over")
 gameOverText = myfont.render("Game Over", True, color1)
+gameWinTextSize = myfont.size("You Win !")
+gameWinText = myfont.render("You Win !", True, color2)
 
 # game launched ?
 gameRunning = 0
 gameover = 0
+#win ?
+win= False
 
 # -- Class Declaration -- #
 
 
 class wall():
     def __init__(self):
+        ## Wall Variables ##
         self.width = width
         self.height = (height - 100) // 2
         self.brickWidth = brickWidth
         self.brickHeight = self.height // rows
+        #Table for storing bricks
         self.bricks = []
+        
 
     def createBricks(self):
-        rowNumber = 0
-        for row in range(rows):
-
-            colNumber = 0
-            for col in range(cols):
-
+        for rowNumber in range(rows):
+            for colNumber in range(cols):
+                # Create Rectancle for each brick
                 brick = pygame.Rect(
                     colNumber*self.brickWidth, 100+rowNumber*self.brickHeight, self.brickWidth, self.brickHeight)
-                # store brick
+                
                 # 25% unbreakable bricks
+                type = r.randint(0,3)
+                if type != 0:
+                    global breakableBricks
+                    breakableBricks+=1
+
+                # Store bricks inside table
                 self.bricks.append(
-                    (colNumber, rowNumber, r.randint(0, 3), brick))
+                    (colNumber, rowNumber, 2, brick))
 
                 colNumber += 1
             rowNumber += 1
@@ -379,6 +394,13 @@ class ball():
                     # delete the brick if breakable
                     if(brick[2] != 0):
                         wallBricks.remove(brick)
+                        global score
+                        score+=1
+                        
+                        #check if game is done
+                        if score == breakableBricks :
+                            global win
+                            win=1
 
         #-- End Check for collisions between ball and Bricks --#
 
@@ -423,6 +445,9 @@ while running:
     elif gameover:
         screen.blit(
             gameOverText, ((width - gameOverTextSize[0])//2, (height + 160) // 2))
+    elif win :
+        screen.blit(
+            gameWinText, ((width - gameWinTextSize[0])//2, (height + 160) // 2))
     else:
 
         # move ball and paddle
