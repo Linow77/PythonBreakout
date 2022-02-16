@@ -464,3 +464,5 @@ while running:
             gameRunning = 1
 
     pygame.display.update()
+
+print("score:",score,"/",breakableBricks)
