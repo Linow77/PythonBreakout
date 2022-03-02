@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import pygame
 import random as r
 import math
@@ -65,7 +66,6 @@ gameOverTextSize = myfont.size("Game Over")
 gameOverText = myfont.render("Game Over", True, color1)
 gameWinTextSize = myfont.size("You Win !")
 gameWinText = myfont.render("You Win !", True, color2)
-
 # game launched ?
 gameRunning = 0
 gameover = 0
@@ -445,6 +445,12 @@ while running:
     elif gameover:
         screen.blit(
             gameOverText, ((width - gameOverTextSize[0])//2, (height + 160) // 2))
+        
+        #print score
+        scoreString = "Score : "+str(score)+"/"+str(breakableBricks)
+        scoreTextSize = myfont.size(scoreString)
+        scoreText = myfont.render(scoreString, True, color1)
+        screen.blit(scoreText, ((width - scoreTextSize[0])//2, (height + 220) // 2))
     elif win :
         screen.blit(
             gameWinText, ((width - gameWinTextSize[0])//2, (height + 160) // 2))
@@ -464,5 +470,3 @@ while running:
             gameRunning = 1
 
     pygame.display.update()
-
-print("score:",score,"/",breakableBricks)
